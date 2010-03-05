@@ -368,6 +368,25 @@ dev-clobber:
 	$(MAKE) DEV_ONLY=true clobber
 
 #
+# modules builds
+#
+
+ifndef BUILD_MODULES
+MODULES_BUILD_ARGUMENT = BUILD_MODULES=all
+else
+MODULES_BUILD_ARGUMENT = BUILD_MODULES=$(BUILD_MODULES)
+endif
+
+modules: modules-build
+
+modules-build:
+	$(MAKE) $(MODULES_BUILD_ARGUMENT) all
+modules-sanity:
+	$(MAKE) $(MODULES_BUILD_ARGUMENT) sanity
+modules-clobber:
+	$(MAKE) $(MODULES_BUILD_ARGUMENT) clobber
+
+#
 # Quick jdk verification build
 #
 jdk_only:
@@ -425,6 +444,7 @@ target_help:
 	@$(ECHO) "\
 --- Common Targets ---  \n\
 all               -- build the core JDK (default target) \n\
+modules           -- build the JDK module images\n\
 help              -- Print out help information \n\
 check             -- Check make variable values for correctness \n\
 sanity            -- Perform detailed sanity checks on system and settings \n\
