@@ -120,10 +120,16 @@ endif
 all_product_build:: 
 	@$(FINISH_ECHO)
 
-# Generis build of basic repo series
+# The resulting full jdk image (legacy or module image)
+JDK_IMAGE_NAME=j2sdk-image
+ifdef BUILD_MODULES
+  JDK_IMAGE_NAME=jdk-module-image
+endif
+
+# Generic build of basic repo series
 generic_build_repo_series::
 	$(MKDIR) -p $(OUTPUTDIR)
-	$(MKDIR) -p $(OUTPUTDIR)/j2sdk-image
+	$(MKDIR) -p $(OUTPUTDIR)/$(JDK_IMAGE_NAME)
 
 ifeq ($(BUILD_LANGTOOLS), true)
   generic_build_repo_series:: langtools
@@ -182,8 +188,8 @@ endif
 
 # Location of fresh bootdir output
 ABS_BOOTDIR_OUTPUTDIR=$(ABS_OUTPUTDIR)/bootjdk
-FRESH_BOOTDIR=$(ABS_BOOTDIR_OUTPUTDIR)/j2sdk-image
-FRESH_DEBUG_BOOTDIR=$(ABS_BOOTDIR_OUTPUTDIR)-$(DEBUG_NAME)/j2sdk-image
+FRESH_BOOTDIR=$(ABS_BOOTDIR_OUTPUTDIR)/$(JDK_IMAGE_NAME)
+FRESH_DEBUG_BOOTDIR=$(ABS_BOOTDIR_OUTPUTDIR)-$(DEBUG_NAME)/$(JDK_IMAGE_NAME)
   
 create_fresh_product_bootdir: FRC
 	@$(START_ECHO)
@@ -302,7 +308,7 @@ OPENJDK_OUTPUTDIR=$(ABS_OUTPUTDIR)/open-output
 OPENJDK_BUILD_NAME \
   = openjdk-$(JDK_MINOR_VERSION)-$(BUILD_NUMBER)-$(PLATFORM)-$(ARCH)-$(BUNDLE_DATE)
 OPENJDK_BUILD_BINARY_ZIP=$(ABS_BIN_BUNDLEDIR)/$(OPENJDK_BUILD_NAME).zip
-BUILT_IMAGE=$(ABS_OUTPUTDIR)/j2sdk-image
+BUILT_IMAGE=$(ABS_OUTPUTDIR)/$(JDK_IMAGE_NAME)
 ifeq ($(PLATFORM)$(ARCH_DATA_MODEL),solaris64)
   OPENJDK_BOOTDIR=$(BOOTDIR)
   OPENJDK_IMPORTJDK=$(JDK_IMPORT_PATH)
@@ -331,7 +337,7 @@ openjdk_build:
 	  ALT_JDK_IMPORT_PATH=$(OPENJDK_IMPORTJDK) \
 		product_build )
 	$(RM) $(OPENJDK_BUILD_BINARY_ZIP)
-	( $(CD) $(OPENJDK_OUTPUTDIR)/j2sdk-image && \
+	( $(CD) $(OPENJDK_OUTPUTDIR)/$(JDK_IMAGE_NAME) && \
 	  $(ZIPEXE) -q -r $(OPENJDK_BUILD_BINARY_ZIP) .)
 	$(RM) -r $(OPENJDK_OUTPUTDIR)
 	@$(ECHO) " "

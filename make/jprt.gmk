@@ -58,12 +58,28 @@ endif
 
 
 jprt_build_fastdebug: fastdebug_build
-	( $(CD) $(OUTPUTDIR)-fastdebug/j2sdk-image && \
+	( $(CD) $(OUTPUTDIR)-fastdebug/$(JPRT_ARCHIVE_IMAGE) && \
 	  $(ZIPEXE) -q -r $(JPRT_ARCHIVE_BUNDLE) . )
+ifdef HAVE_JPRT_SAVE_BUNDLES
+	( $(CD) $(OUTPUTDIR)-fastdebug/bundles && \
+	  $(ZIPEXE) -q -r $(JPRT_ARCHIVE_INSTALL_BUNDLE) . )
+endif
+ifdef BUILD_MODULES
+	( $(CD) $(OUTPUTDIR)-fastdebug && \
+	  $(ZIPEXE) -q -r $(JPRT_ARCHIVE_MODULES_BUNDLE) jre-base-image jigsaw-pkgs)
+endif
 
 jprt_build_debug: debug_build
-	( $(CD) $(OUTPUTDIR)-debug/j2sdk-image && \
+	( $(CD) $(OUTPUTDIR)-debug/$(JPRT_ARCHIVE_IMAGE) && \
 	  $(ZIPEXE) -q -r $(JPRT_ARCHIVE_BUNDLE) . )
+ifdef HAVE_JPRT_SAVE_BUNDLES
+	( $(CD) $(OUTPUTDIR)-debug/bundles && \
+	  $(ZIPEXE) -q -r $(JPRT_ARCHIVE_INSTALL_BUNDLE) . )
+endif
+ifdef BUILD_MODULES
+	( $(CD) $(OUTPUTDIR)-debug && \
+	  $(ZIPEXE) -q -r $(JPRT_ARCHIVE_MODULES_BUNDLE) jre-base-image jigsaw-pkgs)
+endif
 
 ################################################################
 #  PHONY
