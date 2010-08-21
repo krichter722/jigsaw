@@ -1,12 +1,12 @@
 #
-# Copyright 1995-2009 Sun Microsystems, Inc.  All Rights Reserved.
+# Copyright (c) 1995, 2010, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # This code is free software; you can redistribute it and/or modify it
 # under the terms of the GNU General Public License version 2 only, as
-# published by the Free Software Foundation.  Sun designates this
+# published by the Free Software Foundation.  Oracle designates this
 # particular file as subject to the "Classpath" exception as provided
-# by Sun in the LICENSE file that accompanied this code.
+# by Oracle in the LICENSE file that accompanied this code.
 #
 # This code is distributed in the hope that it will be useful, but WITHOUT
 # ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
@@ -18,19 +18,15 @@
 # 2 along with this work; if not, write to the Free Software Foundation,
 # Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
 #
-# Please contact Sun Microsystems, Inc., 4150 Network Circle, Santa Clara,
-# CA 95054 USA or visit www.sun.com if you need additional information or
-# have any questions.
+# Please contact Oracle, 500 Oracle Parkway, Redwood Shores, CA 94065 USA
+# or visit www.oracle.com if you need additional information or have any
+# questions.
 #
 
 BUILD_PARENT_DIRECTORY=.
 
 ifndef TOPDIR
   TOPDIR:=.
-endif
-
-ifndef CONTROL_TOPDIR
-  CONTROL_TOPDIR=$(TOPDIR)
 endif
 
 # Openjdk sources (only used if SKIP_OPENJDK_BUILD!=true)
@@ -185,11 +181,15 @@ endif
 #     The install process needs to know what the DEBUG_NAME is, so
 #     look for INSTALL_DEBUG_NAME in the install rules.
 #
+#   NOTE: On windows, do not use $(ABS_BOOTDIR_OUTPUTDIR)-$(DEBUG_NAME).
+#         Due to the use of short paths in $(ABS_OUTPUTDIR), this may 
+#         not be the same location.
+#
 
 # Location of fresh bootdir output
 ABS_BOOTDIR_OUTPUTDIR=$(ABS_OUTPUTDIR)/bootjdk
 FRESH_BOOTDIR=$(ABS_BOOTDIR_OUTPUTDIR)/$(JDK_IMAGE_NAME)
-FRESH_DEBUG_BOOTDIR=$(ABS_BOOTDIR_OUTPUTDIR)-$(DEBUG_NAME)/$(JDK_IMAGE_NAME)
+FRESH_DEBUG_BOOTDIR=$(ABS_BOOTDIR_OUTPUTDIR)/../$(PLATFORM)-$(ARCH)-$(DEBUG_NAME)/$(JDK_IMAGE_NAME)
   
 create_fresh_product_bootdir: FRC
 	@$(START_ECHO)
@@ -254,10 +254,14 @@ build_product_image:
 	        generic_build_repo_series
 	@$(FINISH_ECHO)
 
+#   NOTE: On windows, do not use $(ABS_OUTPUTDIR)-$(DEBUG_NAME).
+#         Due to the use of short paths in $(ABS_OUTPUTDIR), this may 
+#         not be the same location.
+
 generic_debug_build:
 	@$(START_ECHO)
 	$(MAKE) \
-		ALT_OUTPUTDIR=$(ABS_OUTPUTDIR)-$(DEBUG_NAME) \
+		ALT_OUTPUTDIR=$(ABS_OUTPUTDIR)/../$(PLATFORM)-$(ARCH)-$(DEBUG_NAME) \
 	        DEBUG_NAME=$(DEBUG_NAME) \
 		GENERATE_DOCS=false \
 	        $(BOOT_CYCLE_DEBUG_SETTINGS) \
@@ -354,8 +358,8 @@ endif
 
 clobber::
 	$(RM) -r $(OUTPUTDIR)/*
-	$(RM) -r $(OUTPUTDIR)-debug/*
-	$(RM) -r $(OUTPUTDIR)-fastdebug/*
+	$(RM) -r $(OUTPUTDIR)/../$(PLATFORM)-$(ARCH)-debug/*
+	$(RM) -r $(OUTPUTDIR)/../$(PLATFORM)-$(ARCH)-fastdebug/*
 	-($(RMDIR) -p $(OUTPUTDIR) > $(DEV_NULL) 2>&1; $(TRUE))
 
 clean: clobber
@@ -577,6 +581,56 @@ ifeq ($(BUNDLE_RULES_AVAILABLE), true)
 endif
 
 ################################################################
+# rule to test
+################################################################
+
+.NOTPARALLEL: test
+
+test: test_clean test_start test_summary
+
+test_start:
+	@$(ECHO) "Tests started at `$(DATE)`"
+
+test_clean:
+	$(RM) $(OUTPUTDIR)/test_failures.txt $(OUTPUTDIR)/test_log.txt
+
+test_summary: $(OUTPUTDIR)/test_failures.txt
+	@$(ECHO) "#################################################"
+	@$(ECHO) "Tests completed at `$(DATE)`"
+	@( $(EGREP) '^TEST STATS:' $(OUTPUTDIR)/test_log.txt \
+          || $(ECHO) "No TEST STATS seen in log" )
+	@$(ECHO) "For complete details see: $(OUTPUTDIR)/test_log.txt"
+	@$(ECHO) "#################################################"
+	@if [ -s $< ] ; then                                           \
+          $(ECHO) "ERROR: Test failure count: `$(CAT) $< | $(WC) -l`"; \
+          $(CAT) $<;                                                   \
+          exit 1;                                                      \
+        else                                                           \
+          $(ECHO) "Success! No failures detected";                     \
+        fi
+
+# Get failure list from log
+$(OUTPUTDIR)/test_failures.txt: $(OUTPUTDIR)/test_log.txt
+	@$(RM) $@
+	@( $(EGREP) '^FAILED:' $< || $(ECHO) "" ) > $@
+
+# Get log file of all tests run
+JDK_TO_TEST := $(shell 							\
+  if [ -d "$(ABS_OUTPUTDIR)/$(JDK_IMAGE_NAME)" ] ; then 			\
+    $(ECHO) "$(ABS_OUTPUTDIR)/$(JDK_IMAGE_NAME)"; 				\
+  elif [ -d "$(ABS_OUTPUTDIR)/bin" ] ; then 				\
+    $(ECHO) "$(ABS_OUTPUTDIR)"; 					\
+  elif [ "$(PRODUCT_HOME)" != "" -a -d "$(PRODUCT_HOME)/bin" ] ; then 	\
+    $(ECHO) "$(PRODUCT_HOME)"; 						\
+  fi 									\
+)
+$(OUTPUTDIR)/test_log.txt:
+	$(RM) $@
+	( $(CD) test &&                                     \
+          $(MAKE) NO_STOPPING=- PRODUCT_HOME=$(JDK_TO_TEST) \
+        ) | tee $@
+
+################################################################
 # JPRT rule to build
 ################################################################
 
@@ -586,7 +640,7 @@ include ./make/jprt.gmk
 #  PHONY
 ################################################################
 
-.PHONY: all \
+.PHONY: all  test test_start test_summary test_clean \
 	generic_build_repo_series \
 	what clobber insane \
         dev dev-build dev-sanity dev-clobber \

@@ -1,12 +1,12 @@
 #
-# Copyright 2010 Sun Microsystems, Inc.  All Rights Reserved.
+# Copyright (c) 2010, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # This code is free software; you can redistribute it and/or modify it
 # under the terms of the GNU General Public License version 2 only, as
-# published by the Free Software Foundation.  Sun designates this
+# published by the Free Software Foundation.  Oracle designates this
 # particular file as subject to the "Classpath" exception as provided
-# by Sun in the LICENSE file that accompanied this code.
+# by Oracle in the LICENSE file that accompanied this code.
 #
 # This code is distributed in the hope that it will be useful, but WITHOUT
 # ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
@@ -18,9 +18,9 @@
 # 2 along with this work; if not, write to the Free Software Foundation,
 # Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
 #
-# Please contact Sun Microsystems, Inc., 4150 Network Circle, Santa Clara,
-# CA 95054 USA or visit www.sun.com if you need additional information or
-# have any questions.
+# Please contact Oracle, 500 Oracle Parkway, Redwood Shores, CA 94065 USA
+# or visit www.oracle.com if you need additional information or have any
+# questions.
 #
 
 #
@@ -54,30 +54,33 @@ LANGTOOLS_TEST_LIST = langtools_jtreg
 
 # Test target list for jdk repository
 JDK_TEST_LIST = \
-	jdk_awt \
-	jdk_beans jdk_beans1 jdk_beans2 jdk_beans3  \
+	jdk_beans1 jdk_beans2 jdk_beans3  \
 	jdk_io  \
 	jdk_lang  \
-	jdk_management jdk_management1 jdk_management2  \
+	jdk_management1 jdk_management2  \
 	jdk_math  \
 	jdk_misc  \
 	jdk_net  \
-	jdk_nio jdk_nio1 jdk_nio2 jdk_nio3  \
-	jdk_rmi \
-	jdk_security jdk_security1 jdk_security2 jdk_security3  \
-	jdk_swing \
+	jdk_nio1 jdk_nio2 jdk_nio3  \
+	jdk_security1 jdk_security2 jdk_security3  \
 	jdk_text  \
-	jdk_tools jdk_tools1 jdk_tools2  \
+	jdk_tools1 jdk_tools2  \
 	jdk_util
+
+# These tests need a DISPLAY and can create window interaction complications
+JDK_TEST_LIST2 = \
+	jdk_awt \
+	jdk_rmi \
+	jdk_swing
 
 # Default test target (everything)
 all: $(JDK_TEST_LIST) $(LANGTOOLS_TEST_LIST)
 
 # Test targets
 $(LANGTOOLS_TEST_LIST):
-	@$(call SUBDIR_TEST, $(LANGTOOLS_DIR), $(subst langtools_,,$@))
+	@$(NO_STOPPING)$(call SUBDIR_TEST, $(LANGTOOLS_DIR), $(subst langtools_,,$@))
 $(JDK_TEST_LIST):
-	@$(call SUBDIR_TEST, $(JDK_DIR), $@)
+	@$(NO_STOPPING)$(call SUBDIR_TEST, $(JDK_DIR), $@)
 
 clean:
 
