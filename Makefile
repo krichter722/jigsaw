@@ -116,10 +116,16 @@ endif
 all_product_build:: 
 	@$(FINISH_ECHO)
 
+# The resulting full jdk image (legacy or module image)
+JDK_IMAGE_NAME=j2sdk-image
+ifdef BUILD_MODULES
+  JDK_IMAGE_NAME=jdk-module-image
+endif
+
 # Generic build of basic repo series
 generic_build_repo_series::
 	$(MKDIR) -p $(OUTPUTDIR)
-	$(MKDIR) -p $(OUTPUTDIR)/j2sdk-image
+	$(MKDIR) -p $(OUTPUTDIR)/$(JDK_IMAGE_NAME)
 
 ifeq ($(BUILD_LANGTOOLS), true)
   generic_build_repo_series:: langtools
@@ -182,8 +188,8 @@ endif
 
 # Location of fresh bootdir output
 ABS_BOOTDIR_OUTPUTDIR=$(ABS_OUTPUTDIR)/bootjdk
-FRESH_BOOTDIR=$(ABS_BOOTDIR_OUTPUTDIR)/j2sdk-image
-FRESH_DEBUG_BOOTDIR=$(ABS_BOOTDIR_OUTPUTDIR)/../$(PLATFORM)-$(ARCH)-$(DEBUG_NAME)/j2sdk-image
+FRESH_BOOTDIR=$(ABS_BOOTDIR_OUTPUTDIR)/$(JDK_IMAGE_NAME)
+FRESH_DEBUG_BOOTDIR=$(ABS_BOOTDIR_OUTPUTDIR)/../$(PLATFORM)-$(ARCH)-$(DEBUG_NAME)/$(JDK_IMAGE_NAME)
   
 create_fresh_product_bootdir: FRC
 	@$(START_ECHO)
@@ -306,7 +312,7 @@ OPENJDK_OUTPUTDIR=$(ABS_OUTPUTDIR)/open-output
 OPENJDK_BUILD_NAME \
   = openjdk-$(JDK_MINOR_VERSION)-$(BUILD_NUMBER)-$(PLATFORM)-$(ARCH)-$(BUNDLE_DATE)
 OPENJDK_BUILD_BINARY_ZIP=$(ABS_BIN_BUNDLEDIR)/$(OPENJDK_BUILD_NAME).zip
-BUILT_IMAGE=$(ABS_OUTPUTDIR)/j2sdk-image
+BUILT_IMAGE=$(ABS_OUTPUTDIR)/$(JDK_IMAGE_NAME)
 ifeq ($(PLATFORM)$(ARCH_DATA_MODEL),solaris64)
   OPENJDK_BOOTDIR=$(BOOTDIR)
   OPENJDK_IMPORTJDK=$(JDK_IMPORT_PATH)
@@ -335,7 +341,7 @@ openjdk_build:
 	  ALT_JDK_IMPORT_PATH=$(OPENJDK_IMPORTJDK) \
 		product_build )
 	$(RM) $(OPENJDK_BUILD_BINARY_ZIP)
-	( $(CD) $(OPENJDK_OUTPUTDIR)/j2sdk-image && \
+	( $(CD) $(OPENJDK_OUTPUTDIR)/$(JDK_IMAGE_NAME) && \
 	  $(ZIPEXE) -q -r $(OPENJDK_BUILD_BINARY_ZIP) .)
 	$(RM) -r $(OPENJDK_OUTPUTDIR)
 	@$(ECHO) " "
@@ -370,6 +376,25 @@ dev-sanity:
 	$(MAKE) DEV_ONLY=true sanity
 dev-clobber:
 	$(MAKE) DEV_ONLY=true clobber
+
+#
+# modules builds
+#
+
+ifndef BUILD_MODULES
+MODULES_BUILD_ARGUMENT = BUILD_MODULES=all
+else
+MODULES_BUILD_ARGUMENT = BUILD_MODULES=$(BUILD_MODULES)
+endif
+
+modules: modules-build
+
+modules-build:
+	$(MAKE) $(MODULES_BUILD_ARGUMENT) all
+modules-sanity:
+	$(MAKE) $(MODULES_BUILD_ARGUMENT) sanity
+modules-clobber:
+	$(MAKE) $(MODULES_BUILD_ARGUMENT) clobber
 
 #
 # Quick jdk verification build
@@ -429,6 +454,7 @@ target_help:
 	@$(ECHO) "\
 --- Common Targets ---  \n\
 all               -- build the core JDK (default target) \n\
+modules           -- build the JDK module images\n\
 help              -- Print out help information \n\
 check             -- Check make variable values for correctness \n\
 sanity            -- Perform detailed sanity checks on system and settings \n\
@@ -593,8 +619,8 @@ $(OUTPUTDIR)/test_failures.txt: $(OUTPUTDIR)/test_log.txt
 
 # Get log file of all tests run
 JDK_TO_TEST := $(shell 							\
-  if [ -d "$(ABS_OUTPUTDIR)/j2sdk-image" ] ; then 			\
-    $(ECHO) "$(ABS_OUTPUTDIR)/j2sdk-image"; 				\
+  if [ -d "$(ABS_OUTPUTDIR)/$(JDK_IMAGE_NAME)" ] ; then 			\
+    $(ECHO) "$(ABS_OUTPUTDIR)/$(JDK_IMAGE_NAME)"; 				\
   elif [ -d "$(ABS_OUTPUTDIR)/bin" ] ; then 				\
     $(ECHO) "$(ABS_OUTPUTDIR)"; 					\
   elif [ "$(PRODUCT_HOME)" != "" -a -d "$(PRODUCT_HOME)/bin" ] ; then 	\
