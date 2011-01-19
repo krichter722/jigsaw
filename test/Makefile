@@ -57,6 +57,7 @@ JDK_TEST_LIST = \
 	jdk_beans1 jdk_beans2 jdk_beans3  \
 	jdk_io  \
 	jdk_lang  \
+	jdk_jigsaw \
 	jdk_management1 jdk_management2  \
 	jdk_math  \
 	jdk_misc  \
