@@ -96,10 +96,16 @@ define StopTimer
 	$(if $(REPORT_BUILD_TIMES),$(call RecordEndTime,TOTAL) && $(call ReportBuildTimes,$1),)
 endef
 
+# The resulting full jdk image (legacy or module image)
+JDK_IMAGE_NAME=j2sdk-image
+ifdef BUILD_MODULES
+  JDK_IMAGE_NAME=jdk-module-image
+endif
+
 # Generic build of basic repo series
 generic_build_repo_series::
 	$(MKDIR) -p $(OUTPUTDIR)
-	$(MKDIR) -p $(OUTPUTDIR)/j2sdk-image
+	$(MKDIR) -p $(OUTPUTDIR)/$(JDK_IMAGE_NAME)
 	@$(call StartTimer)
 
 ifeq ($(BUILD_LANGTOOLS), true)
@@ -160,8 +166,8 @@ generic_build_repo_series::
 
 # Location of fresh bootdir output
 ABS_BOOTDIR_OUTPUTDIR=$(ABS_OUTPUTDIR)/bootjdk
-FRESH_BOOTDIR=$(ABS_BOOTDIR_OUTPUTDIR)/j2sdk-image
-FRESH_DEBUG_BOOTDIR=$(ABS_BOOTDIR_OUTPUTDIR)/../$(PLATFORM)-$(ARCH)-$(DEBUG_NAME)/j2sdk-image
+FRESH_BOOTDIR=$(ABS_BOOTDIR_OUTPUTDIR)/$(JDK_IMAGE_NAME)
+FRESH_DEBUG_BOOTDIR=$(ABS_BOOTDIR_OUTPUTDIR)/../$(PLATFORM)-$(ARCH)-$(DEBUG_NAME)/$(JDK_IMAGE_NAME)
   
 create_fresh_product_bootdir: FRC
 	$(MAKE) ALT_OUTPUTDIR=$(ABS_BOOTDIR_OUTPUTDIR) \
@@ -266,6 +272,25 @@ dev-clobber:
 	$(MAKE) DEV_ONLY=true clobber
 
 #
+# modules builds
+#
+
+ifndef BUILD_MODULES
+MODULES_BUILD_ARGUMENT = BUILD_MODULES=all
+else
+MODULES_BUILD_ARGUMENT = BUILD_MODULES=$(BUILD_MODULES)
+endif
+
+modules: modules-build
+
+modules-build:
+	$(MAKE) $(MODULES_BUILD_ARGUMENT) all
+modules-sanity:
+	$(MAKE) $(MODULES_BUILD_ARGUMENT) sanity
+modules-clobber:
+	$(MAKE) $(MODULES_BUILD_ARGUMENT) clobber
+
+#
 # Quick jdk verification build
 #
 jdk_only:
@@ -323,6 +348,7 @@ target_help:
 	@$(ECHO) "\
 --- Common Targets ---  \n\
 all               -- build the core JDK (default target) \n\
+modules           -- build the JDK module images\n\
 help              -- Print out help information \n\
 check             -- Check make variable values for correctness \n\
 sanity            -- Perform detailed sanity checks on system and settings \n\
@@ -481,8 +507,8 @@ $(OUTPUTDIR)/test_failures.txt: $(OUTPUTDIR)/test_log.txt
 
 # Get log file of all tests run
 JDK_TO_TEST := $(shell 							\
-  if [ -d "$(ABS_OUTPUTDIR)/j2sdk-image" ] ; then 			\
-    $(ECHO) "$(ABS_OUTPUTDIR)/j2sdk-image"; 				\
+  if [ -d "$(ABS_OUTPUTDIR)/$(JDK_IMAGE_NAME)" ] ; then 			\
+    $(ECHO) "$(ABS_OUTPUTDIR)/$(JDK_IMAGE_NAME)"; 				\
   elif [ -d "$(ABS_OUTPUTDIR)/bin" ] ; then 				\
     $(ECHO) "$(ABS_OUTPUTDIR)"; 					\
   elif [ "$(PRODUCT_HOME)" != "" -a -d "$(PRODUCT_HOME)/bin" ] ; then 	\
