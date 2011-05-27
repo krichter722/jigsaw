@@ -37,15 +37,8 @@ JPRT_ARCHIVE_BUNDLE=$(ABS_OUTPUTDIR)/$(DEFAULT_BUILD_FLAVOR)-bundle.zip
 JPRT_ARCHIVE_INSTALL_BUNDLE=$(ABS_OUTPUTDIR)/$(DEFAULT_BUILD_FLAVOR)-install-bundle.zip
 JPRT_ARCHIVE_MODULES_BUNDLE=$(ABS_OUTPUTDIR)/$(DEFAULT_BUILD_FLAVOR)-modules-bundle.zip
 
-# jdk image to archive
-JPRT_ARCHIVE_IMAGE=j2sdk-image
-ifdef BUILD_MODULES
-  JPRT_ARCHIVE_IMAGE=jdk-module-image
-endif
-
-
 jprt_build_product:  sanity all_product_build
-	( $(CD) $(OUTPUTDIR)/$(JPRT_ARCHIVE_IMAGE) && \
+	( $(CD) $(OUTPUTDIR)/$(JDK_IMAGE_DIRNAME) && \
 	  $(ZIPEXE) -q -r $(JPRT_ARCHIVE_BUNDLE) . )
 ifdef HAVE_JPRT_SAVE_BUNDLES
 	( $(CD) $(OUTPUTDIR)/bundles && \
@@ -58,7 +51,7 @@ endif
 
 
 jprt_build_fastdebug: fastdebug_build
-	( $(CD) $(OUTPUTDIR)/../$(PLATFORM)-$(ARCH)-fastdebug/$(JPRT_ARCHIVE_IMAGE) && \
+	( $(CD) $(OUTPUTDIR)/$(REL_JDK_FASTDEBUG_IMAGE_DIR) && \
 	  $(ZIPEXE) -q -r $(JPRT_ARCHIVE_BUNDLE) . )
 ifdef HAVE_JPRT_SAVE_BUNDLES
 	( $(CD) $(OUTPUTDIR)-fastdebug/bundles && \
@@ -70,7 +63,7 @@ ifdef BUILD_MODULES
 endif
 
 jprt_build_debug: debug_build
-	( $(CD) $(OUTPUTDIR)/../$(PLATFORM)-$(ARCH)-debug/$(JPRT_ARCHIVE_IMAGE) && \
+	( $(CD) $(OUTPUTDIR)/$(REL_JDK_DEBUG_IMAGE_DIR) && \
 	  $(ZIPEXE) -q -r $(JPRT_ARCHIVE_BUNDLE) . )
 ifdef HAVE_JPRT_SAVE_BUNDLES
 	( $(CD) $(OUTPUTDIR)-debug/bundles && \
