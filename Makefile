@@ -43,8 +43,12 @@ OUTPUTDIR_BASENAME-fastdebug = $(ORIG_OUTPUTDIR_BASENAME)-fastdebug
 # Relative path to a debug output area
 REL_JDK_OUTPUTDIR = ../$(OUTPUTDIR_BASENAME-$(DEBUG_NAME))
 
-# The created jdk image directory
+# The created jdk image directory (legacy or module image)
 JDK_IMAGE_DIRNAME = j2sdk-image
+ifdef BUILD_MODULES
+  JDK_IMAGE_DIRNAME=jdk-module-image
+endif
+
 JDK_IMAGE_DIR     = $(OUTPUTDIR)/$(JDK_IMAGE_DIRNAME)
 ABS_JDK_IMAGE_DIR = $(ABS_OUTPUTDIR)/$(JDK_IMAGE_DIRNAME)
 
@@ -299,6 +303,25 @@ dev-clobber:
 	$(MAKE) DEV_ONLY=true clobber
 
 #
+# modules builds
+#
+
+ifndef BUILD_MODULES
+MODULES_BUILD_ARGUMENT = BUILD_MODULES=all
+else
+MODULES_BUILD_ARGUMENT = BUILD_MODULES=$(BUILD_MODULES)
+endif
+
+modules: modules-build
+
+modules-build:
+	$(MAKE) $(MODULES_BUILD_ARGUMENT) all
+modules-sanity:
+	$(MAKE) $(MODULES_BUILD_ARGUMENT) sanity
+modules-clobber:
+	$(MAKE) $(MODULES_BUILD_ARGUMENT) clobber
+
+#
 # Quick jdk verification build
 #
 jdk_only:
@@ -356,6 +379,7 @@ target_help:
 	@$(ECHO) "\
 --- Common Targets ---  \n\
 all               -- build the core JDK (default target) \n\
+modules           -- build the JDK module images\n\
 help              -- Print out help information \n\
 check             -- Check make variable values for correctness \n\
 sanity            -- Perform detailed sanity checks on system and settings \n\
