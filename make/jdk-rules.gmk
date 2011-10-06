@@ -30,7 +30,8 @@
 JDK_JAVA_EXE = $(OUTPUTDIR)/bin/java$(EXE_SUFFIX)
 
 # NO_IMAGES may be set in conjunction with DEV_ONLY
-IMAGES_TARGET = images
+# jigsaw by default builds modules image
+IMAGES_TARGET = modules
 ifdef DEV_ONLY
   ifdef NO_IMAGES
     IMAGES_TARGET =
@@ -43,7 +44,8 @@ ifeq ($(GENERATE_DOCS),false)
   DOCS_TARGET =
 endif
   
-JDK_BUILD_TARGETS = sanity all $(DOCS_TARGET) $(IMAGES_TARGET)
+JDK_BUILD_TARGETS = sanity all $(DOCS_TARGET)
+JDK_BUILD_TARGETS += $(IMAGES_TARGET)
 
 JDK_CLOBBER_TARGETS = clobber
 
@@ -65,6 +67,12 @@ endif
 
 ifeq ($(BUILD_HOTSPOT), true)
   JDK_BUILD_ARGUMENTS += ALT_HOTSPOT_IMPORT_PATH=$(HOTSPOT_DIR)/import
+endif
+
+ifndef BUILD_MODULES
+  JDK_BUILD_ARGUMENTS += BUILD_MODULES=all
+else
+  JDK_BUILD_ARGUMENTS += BUILD_MODULES="$(BUILD_MODULES)"
 endif
 
 JDK_BUILD_ARGUMENTS += \

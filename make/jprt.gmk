@@ -35,6 +35,7 @@ DEFAULT_BUILD_FLAVOR=product
 # JPRT will define these when it builds
 JPRT_ARCHIVE_BUNDLE=$(ABS_OUTPUTDIR)/$(DEFAULT_BUILD_FLAVOR)-bundle.zip
 JPRT_ARCHIVE_INSTALL_BUNDLE=$(ABS_OUTPUTDIR)/$(DEFAULT_BUILD_FLAVOR)-install-bundle.zip
+JPRT_ARCHIVE_MODULES_BUNDLE=$(ABS_OUTPUTDIR)/$(DEFAULT_BUILD_FLAVOR)-modules-bundle.zip
 
 jprt_build_product:  sanity all_product_build
 	( $(CD) $(OUTPUTDIR)/$(JDK_IMAGE_DIRNAME) && \
@@ -43,14 +44,35 @@ ifdef HAVE_JPRT_SAVE_BUNDLES
 	( $(CD) $(OUTPUTDIR)/bundles && \
 	  $(ZIPEXE) -q -r $(JPRT_ARCHIVE_INSTALL_BUNDLE) . )
 endif
+ifndef BUILD_LEGACY
+	( $(CD) $(OUTPUTDIR) && \
+	  $(ZIPEXE) -q -r $(JPRT_ARCHIVE_MODULES_BUNDLE) jre-base-image jigsaw-pkgs)
+endif
+
 
 jprt_build_fastdebug: fastdebug_build
 	( $(CD) $(OUTPUTDIR)/$(REL_JDK_FASTDEBUG_IMAGE_DIR) && \
 	  $(ZIPEXE) -q -r $(JPRT_ARCHIVE_BUNDLE) . )
+ifdef HAVE_JPRT_SAVE_BUNDLES
+	( $(CD) $(OUTPUTDIR)-fastdebug/bundles && \
+	  $(ZIPEXE) -q -r $(JPRT_ARCHIVE_INSTALL_BUNDLE) . )
+endif
+ifndef BUILD_LEGACY
+	( $(CD) $(OUTPUTDIR)-fastdebug && \
+	  $(ZIPEXE) -q -r $(JPRT_ARCHIVE_MODULES_BUNDLE) jre-base-image jigsaw-pkgs)
+endif
 
 jprt_build_debug: debug_build
 	( $(CD) $(OUTPUTDIR)/$(REL_JDK_DEBUG_IMAGE_DIR) && \
 	  $(ZIPEXE) -q -r $(JPRT_ARCHIVE_BUNDLE) . )
+ifdef HAVE_JPRT_SAVE_BUNDLES
+	( $(CD) $(OUTPUTDIR)-debug/bundles && \
+	  $(ZIPEXE) -q -r $(JPRT_ARCHIVE_INSTALL_BUNDLE) . )
+endif
+ifndef BUILD_LEGACY
+	( $(CD) $(OUTPUTDIR)-debug && \
+	  $(ZIPEXE) -q -r $(JPRT_ARCHIVE_MODULES_BUNDLE) jre-base-image jigsaw-pkgs)
+endif
 
 ################################################################
 #  PHONY
