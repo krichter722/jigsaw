@@ -43,8 +43,12 @@ OUTPUTDIR_BASENAME-fastdebug = $(ORIG_OUTPUTDIR_BASENAME)-fastdebug
 # Relative path to a debug output area
 REL_JDK_OUTPUTDIR = ../$(OUTPUTDIR_BASENAME-$(DEBUG_NAME))
 
-# The created jdk image directory
-JDK_IMAGE_DIRNAME = j2sdk-image
+# The created jdk image directory (legacy or module image)
+JDK_IMAGE_DIRNAME=jdk-module-image
+ifdef BUILD_LEGACY
+  JDK_IMAGE_DIRNAME = j2sdk-image
+endif
+
 JDK_IMAGE_DIR     = $(OUTPUTDIR)/$(JDK_IMAGE_DIRNAME)
 ABS_JDK_IMAGE_DIR = $(ABS_OUTPUTDIR)/$(JDK_IMAGE_DIRNAME)
 
@@ -348,7 +352,7 @@ help: intro_help target_help variable_help notes_help examples_help
 # Intro help message
 intro_help:
 	@$(ECHO) "\
-Makefile for the JDK builds (all the JDK). \n\
+Makefile for the modular JDK builds (all the JDK). \n\
 "
 
 # Target help
