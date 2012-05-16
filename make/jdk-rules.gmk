@@ -42,7 +42,7 @@ DOCS_TARGET = docs
 ifeq ($(GENERATE_DOCS),false)
   DOCS_TARGET =
 endif
-  
+
 JDK_BUILD_TARGETS = sanity all $(DOCS_TARGET)
 JDK_BUILD_TARGETS += $(IMAGES_TARGET)
 
@@ -67,7 +67,12 @@ endif
 ifeq ($(BUILD_HOTSPOT), true)
   JDK_BUILD_ARGUMENTS += ALT_HOTSPOT_IMPORT_PATH=$(HOTSPOT_DIR)/import
 endif
-
+ifeq ($(BUILD_BDB), true)
+  JDK_BUILD_ARGUMENTS += ALT_BDB_IMPORT_PATH=$(BDB_DIR)/import
+endif
+ifeq ($(USE_SYSTEM_BDB), true)
+  JDK_BUILD_ARGUMENTS += USE_SYSTEM_BDB=$(USE_SYSTEM_BDB)
+endif
 ifndef BUILD_MODULES
   JDK_BUILD_ARGUMENTS += BUILD_MODULES=all
 else
@@ -105,7 +110,8 @@ jdk-clobber::
 
 jdk-sanity::
 	( $(CD) $(JDK_TOPDIR)/make && \
-	  $(MAKE) sanity HOTSPOT_IMPORT_CHECK=false $(JDK_BUILD_ARGUMENTS) ; )
+	  $(MAKE) sanity HOTSPOT_IMPORT_CHECK=false BDB_IMPORT_CHECK=false \
+	  $(JDK_BUILD_ARGUMENTS) ; )
 
 compare-images: compare-image
 compare-image:
@@ -121,5 +127,5 @@ compare-image-clobber:
 	  $(MAKE) ALT_OUTPUTDIR=$(ABS_OUTPUTDIR) compare-image-clobber )
 	@$(call MakeFinish,jdk,compare-image-clobber)
 
-.PHONY: jdk jdk-build jdk-clobber jdk-sanity 
+.PHONY: jdk jdk-build jdk-clobber jdk-sanity
 

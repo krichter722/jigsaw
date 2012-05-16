@@ -36,7 +36,7 @@ trap 'rm -f -r ${tmp}' EXIT
 # Only look in specific locations for possible forests (avoids long searches)
 pull_default=""
 if [ "$1" = "clone" -o "$1" = "fclone" ] ; then
-  subrepos="corba jaxp jaxws langtools jdk hotspot"
+  subrepos="bdb corba jaxp jaxws langtools jdk hotspot"
   if [ -f .hg/hgrc ] ; then
     pull_default=`hg paths default`
   fi

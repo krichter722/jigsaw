@@ -78,6 +78,7 @@ include ./make/langtools-rules.gmk
 include ./make/corba-rules.gmk
 include ./make/jaxp-rules.gmk
 include ./make/jaxws-rules.gmk
+include ./make/bdb-rules.gmk
 include ./make/jdk-rules.gmk
 include ./make/install-rules.gmk
 include ./make/sponsors-rules.gmk
@@ -156,6 +157,11 @@ endif
 ifeq ($(BUILD_HOTSPOT), true)
   generic_build_repo_series:: $(HOTSPOT) 
   clobber:: hotspot-clobber
+endif
+
+ifeq ($(BUILD_BDB), true)
+  generic_build_repo_series:: bdb 
+  clobber:: bdb-clobber
 endif
 
 ifeq ($(BUILD_JDK), true)
@@ -323,6 +329,7 @@ deploy_fastdebug_only:
 	$(MAKE) \
 	    DEBUG_NAME=fastdebug \
 	    BUILD_HOTSPOT=false \
+	    BUILD_BDB=false \
 	    BUILD_JDK=false \
 	    BUILD_LANGTOOLS=false \
 	    BUILD_CORBA=false \
