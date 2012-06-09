@@ -43,8 +43,12 @@ OUTPUTDIR_BASENAME-fastdebug = $(ORIG_OUTPUTDIR_BASENAME)-fastdebug
 # Relative path to a debug output area
 REL_JDK_OUTPUTDIR = ../$(OUTPUTDIR_BASENAME-$(DEBUG_NAME))
 
-# The created jdk image directory
-JDK_IMAGE_DIRNAME = j2sdk-image
+# The created jdk image directory (legacy or module image)
+JDK_IMAGE_DIRNAME=jdk-module-image
+ifdef BUILD_LEGACY
+  JDK_IMAGE_DIRNAME = j2sdk-image
+endif
+
 JDK_IMAGE_DIR     = $(OUTPUTDIR)/$(JDK_IMAGE_DIRNAME)
 ABS_JDK_IMAGE_DIR = $(ABS_OUTPUTDIR)/$(JDK_IMAGE_DIRNAME)
 
@@ -74,6 +78,7 @@ include ./make/langtools-rules.gmk
 include ./make/corba-rules.gmk
 include ./make/jaxp-rules.gmk
 include ./make/jaxws-rules.gmk
+include ./make/bdb-rules.gmk
 include ./make/jdk-rules.gmk
 include ./make/install-rules.gmk
 include ./make/sponsors-rules.gmk
@@ -152,6 +157,11 @@ endif
 ifeq ($(BUILD_HOTSPOT), true)
   generic_build_repo_series:: $(HOTSPOT) 
   clobber:: hotspot-clobber
+endif
+
+ifeq ($(BUILD_BDB), true)
+  generic_build_repo_series:: bdb 
+  clobber:: bdb-clobber
 endif
 
 ifeq ($(BUILD_JDK), true)
@@ -319,6 +329,7 @@ deploy_fastdebug_only:
 	$(MAKE) \
 	    DEBUG_NAME=fastdebug \
 	    BUILD_HOTSPOT=false \
+	    BUILD_BDB=false \
 	    BUILD_JDK=false \
 	    BUILD_LANGTOOLS=false \
 	    BUILD_CORBA=false \
@@ -348,7 +359,7 @@ help: intro_help target_help variable_help notes_help examples_help
 # Intro help message
 intro_help:
 	@$(ECHO) "\
-Makefile for the JDK builds (all the JDK). \n\
+Makefile for the modular JDK builds (all the JDK). \n\
 "
 
 # Target help

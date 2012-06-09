@@ -33,6 +33,10 @@ ifeq ($(BUILD_HOTSPOT), true)
   sanity:: hotspot-sanity
 endif
 
+ifeq ($(BUILD_BDB), true)
+  sanity:: bdb-sanity
+endif
+
 ifeq ($(BUILD_DEPLOY), true)
   sanity:: deploy-sanity
 endif
@@ -174,6 +178,14 @@ ifeq ($(HOTSPOT_SRC_AVAILABLE), true)
            "" >> $(WARNING_FILE)
   endif
 endif
+ifeq ($(BDB_SRC_AVAILABLE), true)
+  ifneq ($(BUILD_BDB), true)
+	@$(ECHO) "WARNING: You are not building the bdb sources.\n" \
+           "        The bdb files will be obtained from \n" \
+           "        the location set in ALT_BDB_IMPORT_PATH. \n" \
+           "" >> $(WARNING_FILE)
+  endif
+endif
 ifeq ($(JDK_SRC_AVAILABLE), true)
   ifneq ($(BUILD_JDK), true)
 	@$(ECHO) "WARNING: You are not building the JDK sources.\n" \
@@ -265,6 +277,9 @@ endif
 ifeq ($(HOTSPOT_SRC_AVAILABLE), true)
 	@$(ECHO) "   HOTSPOT_TOPDIR = $(HOTSPOT_TOPDIR)"  >> $(MESSAGE_FILE)
 endif
+ifeq ($(BDB_SRC_AVAILABLE), true)
+	@$(ECHO) "   BDB_TOPDIR = $(BDB_TOPDIR)"  >> $(MESSAGE_FILE)
+endif
 ifeq ($(JDK_SRC_AVAILABLE), true)
 	@$(ECHO) "   JDK_TOPDIR = $(JDK_TOPDIR)"  >> $(MESSAGE_FILE)
 endif
@@ -299,6 +314,9 @@ ifeq ($(CORBA_SRC_AVAILABLE), true)
 endif
 ifeq ($(HOTSPOT_SRC_AVAILABLE), true)
 	@$(ECHO) "   BUILD_HOTSPOT = $(BUILD_HOTSPOT) " >> $(MESSAGE_FILE)
+endif
+ifeq ($(BDB_SRC_AVAILABLE), true)
+	@$(ECHO) "   BUILD_BDB    = $(BUILD_BDB) " >> $(MESSAGE_FILE)
 endif
 ifeq ($(JDK_SRC_AVAILABLE), true)
 	@$(ECHO) "   BUILD_JDK    = $(BUILD_JDK) " >> $(MESSAGE_FILE)

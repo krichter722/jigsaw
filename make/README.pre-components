@@ -1,6 +1,6 @@
 README-pre-components:
 ---------------------
-Current pre-components are langtools, jaxws, jaxp, and corba.
+Current pre-components are bdb, langtools, jaxws, jaxp, and corba.
 
 Pre-components can use ant to build but must have a make/Makefile for
 building (a GNU make Makefile).
