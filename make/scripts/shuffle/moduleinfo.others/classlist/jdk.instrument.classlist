@@ -1,0 +1,9 @@
+java/lang/instrument/ClassDefinition.class
+java/lang/instrument/ClassFileTransformer.class
+java/lang/instrument/IllegalClassFormatException.class
+java/lang/instrument/Instrumentation.class
+java/lang/instrument/UnmodifiableClassException.class
+sun/instrument/InstrumentationImpl$1.class
+sun/instrument/InstrumentationImpl.class
+sun/instrument/TransformerManager.class
+sun/instrument/TransformerManager$TransformerInfo.class

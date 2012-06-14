@@ -1,0 +1,6 @@
+javax/transaction/InvalidTransactionException.class
+javax/transaction/TransactionRequiredException.class
+javax/transaction/TransactionRolledbackException.class
+javax/transaction/xa/XAException.class
+javax/transaction/xa/XAResource.class
+javax/transaction/xa/Xid.class
