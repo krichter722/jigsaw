@@ -314,6 +314,14 @@ process_repository() {
 
   for module in $*; do
     echo processing $module
+
+    # copy module-info.java first
+    if [ -f $BASE/src/$module/module-info.java ]; then
+      cp $BASE/src/$module/module-info.java $SDIR/$module
+      modinfo=yes
+    else
+      modinfo=no
+    fi 
     
     shuffle_script=$SDIR/$module/shuffle.sh
     dirs=$SDIR/${module}/dirs
@@ -521,6 +529,12 @@ process_repository() {
         done # for
       done # cat
     fi
+    # module-info.java
+    if [ "$modinfo" = "yes" ]; then
+        printf '\n%s ${ROOT}/shufflescripts/%s/module-info.java \
+              ${ROOT}/%s/newsrc/share/mclasses/%s/\n\n' \
+              "${RSYNC}" $module $repo $module >> $shuffle_script
+    fi
   done # module
 }
 
@@ -615,7 +629,7 @@ done
 rm -rf $TOP/shufflescripts $TOP/scripts.zip
 mkdir $TOP/shufflescripts
 cd $SDIR
-find . -name '*.sh' -o -name excludes | zip -@ $TOP/scripts.zip
+find . -name '*.sh' -o -name excludes -o -name module-info.java | zip -@ $TOP/scripts.zip
 cd $TOP/shufflescripts
 unzip ../scripts.zip
 cp $MS/*shuffle.sh .
