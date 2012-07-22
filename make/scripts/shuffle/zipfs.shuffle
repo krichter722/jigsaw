@@ -1,0 +1,28 @@
+#
+# MANUALLY Generated 
+#
+# check required environment variables set
+
+echo shuffling jdk.zipfs
+
+if [ "$ROOT" = "" ]; then
+  echo 'Please set $ROOT to point to top level directory of forest'
+  exit 1
+fi
+if [ ! -d $ROOT/jdk/newsrc ]; then
+  mkdir $ROOT/jdk/newsrc
+fi
+if [ "$SCRIPT_DIR" = "" ]; then
+  echo 'Please set $SCRIPT_DIR to point to directory containing the un/shuffle scripts'
+  exit 1
+fi
+
+mkdir -p ${ROOT}/jdk/newsrc/share/mclasses/jdk.zipfs
+
+rsync -q --exclude-from=${SCRIPT_DIR}/jdk.zipfs/excludes -R \
+                ${ROOT}/jdk/src/share/demo/nio/zipfs/src/./com/sun/nio/zipfs/* \
+                ${ROOT}/jdk/newsrc/share/mclasses/jdk.zipfs/
+
+rsync -q --exclude-from=${SCRIPT_DIR}/jdk.zipfs/excludes -R \
+                ${ROOT}/jdk/src/share/demo/nio/zipfs/src/./META-INF/services/* \
+                ${ROOT}/jdk/newsrc/share/mclasses/jdk.zipfs/

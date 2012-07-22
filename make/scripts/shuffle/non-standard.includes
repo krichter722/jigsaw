@@ -1,0 +1,103 @@
+#
+# Mappings that don't fit the standard  jdk/src/$platform/{native,classes} layout
+#
+# Format is
+# <module-name> <file(s) location in original source tree> <location in jigsaw/shuffled tree>
+#
+jdk.base jdk/src/closed/share/lib/security/blacklist jdk/newsrc/share/mclasses/jdk.base/etc/lib/security/blacklist
+jdk.base jdk/src/closed/share/lib/security/cacerts.internal jdk/newsrc/share/mclasses/jdk.base/etc/lib/security/cacerts.internal
+jdk.base jdk/src/closed/share/lib/security/trusted.libraries jdk/newsrc/share/mclasses/jdk.base/etc/lib/security/trusted.libraries
+jdk.base jdk/src/share/bin/* jdk/newsrc/share/native/jdk.base/bin/*
+jdk.base jdk/src/solaris/bin/* jdk/newsrc/solaris/native/jdk.base/bin/*
+jdk.base jdk/src/macosx/bin/* jdk/newsrc/macosx/native/jdk.base/bin/*
+jdk.base jdk/src/share/javavm/export/jni.h jdk/newsrc/share/mclasses/jdk.base/etc/javavm/export/jni.h
+jdk.base jdk/src/share/javavm/export/jvm.h jdk/newsrc/share/mclasses/jdk.base/etc/javavm/export/jvm.h
+jdk.base jdk/src/share/lib/calendars.properties jdk/newsrc/share/mclasses/jdk.base/etc/lib/calendars.properties
+jdk.base jdk/src/share/lib/colorname.properties jdk/newsrc/share/mclasses/jdk.base/etc/lib/colorname.properties
+jdk.base jdk/src/share/lib/net.properties jdk/newsrc/share/mclasses/jdk.base/etc/lib/net.properties
+jdk.base jdk/src/share/lib/security/* jdk/newsrc/share/mclasses/jdk.base/etc/lib/security/*
+jdk.base jdk/src/share/native/common/* jdk/newsrc/share/native/jdk.base/common/*
+jdk.base jdk/src/solaris/lib/sdp/sdp.conf.template jdk/newsrc/solaris/etc/jdk.base/lib/sdp/sdp.conf.template
+jdk.base jdk/src/windows/lib/plugin.properties jdk/newsrc/windows/etc/jdk.base/lib/plugin.properties
+jdk.base jdk/src/windows/lib/tzmappings jdk/newsrc/windows/etc/jdk.base/lib/tzmappings
+jdk.base jdk/src/windows/native/common/java_main_md.h jdk/newsrc/windows/native/jdk.base/common/java_main_md.h
+jdk.base jdk/src/windows/native/sun/io/Win32ErrorMode.c jdk/newsrc/windows/native/jdk.base/sun/io/Win32ErrorMode.c
+jdk.base jdk/src/windows/native/sun/net/www/protocol/http/ntlm/NTLMAuthSequence.c jdk/newsrc/windows/native/jdk.base/sun/net/www/protocol/http/ntlm/NTLMAuthSequence.c
+jdk.base jdk/src/macosx/bundle/JavaAppLauncher/resources/English.lproj/InfoPlist.strings jdk/newsrc/macosx/etc/jdk.base/bundle/JavaAppLauncher/resources/English.lproj/InfoPlist.strings
+jdk.base jdk/src/macosx/bundle/JavaAppLauncher/resources/JavaAppLauncher-Info.plist jdk/newsrc/macosx/etc/jdk.base/bundle/JavaAppLauncher/resources/JavaAppLauncher-Info.plist
+jdk.base jdk/src/macosx/bundle/JavaAppLauncher/src/* jdk/newsrc/macosx/native/jdk.base/bundle/JavaAppLauncher/src/*
+jdk.base jdk/src/macosx/bundle/* jdk/newsrc/macosx/etc/jdk.base/bundle/*
+jdk.base jdk/src/macosx/native/sun/osxapp/* jdk/newsrc/macosx/native/jdk.base/sun/osxapp/*
+jdk.base jdk/src/macosx/lib/* jdk/newsrc/macosx/etc/jdk.base/lib/*
+jdk.base jdk/src/macosx/classes/com/apple/laf/resources/aqua.properties jdk/newsrc/macosx/mclasses/jdk.base/com/apple/laf/resources/aqua.properties
+jdk.base jdk/src/macosx/native/apple/security/KeystoreImpl.m jdk/newsrc/macosx/native/jdk.base/apple/security/KeystoreImpl.m
+jdk.base jdk/src/macosx/native/com/apple/concurrent/Dispatch.m jdk/newsrc/macosx/native/jdk.base/com/apple/concurrent/Dispatch.m
+jdk.base jdk/src/macosx/native/com/apple/eio/CFileManager.m jdk/newsrc/macosx/native/jdk.base/com/apple/eio/CFileManager.m
+jdk.base jdk/src/macosx/native/com/apple/resources/MacOSXResourceBundle.m jdk/newsrc/macosx/native/jdk.base/com/apple/resources/MacOSXResourceBundle.m
+#
+jdk.desktop jdk/src/closed/share/lib/fonts/* jdk/newsrc/share/etc/jdk.desktop/lib/fonts/*
+jdk.desktop jdk/src/closed/share/lib/fonts/oblique/* jdk/newsrc/share/etc/jdk.desktop/lib/fonts/oblique/*
+jdk.desktop jdk/src/share/javavm/export/jawt.h jdk/newsrc/share/native/jdk.desktop/javavm/export/jawt.h
+jdk.desktop jdk/src/share/lib/images/cursors/* jdk/newsrc/share/etc/jdk.desktop/lib/images/cursors/*
+jdk.desktop jdk/src/share/lib/sound.properties jdk/newsrc/share/etc/jdk.desktop/lib/sound.properties
+jdk.desktop jdk/src/solaris/native/sun/jdga/* jdk/newsrc/solaris/native/jdk.desktop/sun/dga/*
+jdk.desktop jdk/src/solaris/native/sun/xawt/* jdk/newsrc/solaris/native/jdk.desktop/sun/xawt/*
+jdk.desktop jdk/src/windows/native/sun/awt_common/awt_makecube.cpp jdk/newsrc/windows/native/jdk.desktop/sun/awt_common/awt_makecube.cpp
+jdk.desktop jdk/src/macosx/native/com/apple/laf/* jdk/newsrc/macosx/native/jdk.desktop/com/apple/laf/*
+#
+jdk.instrument jdk/src/share/instrument/* jdk/newsrc/share/native/jdk.instrument/*
+#
+jdk.management jdk/src/closed/share/javavm/export/jfr.h jdk/newsrc/share/native/jdk.management/export/jfr.h
+jdk.management jdk/src/closed/share/native/oracle/jfr/* jdk/newsrc/share/native/jdk.management/oracle/jfr/*
+jdk.management jdk/src/share/javavm/export/jmm.h jdk/newsrc/share/native/jdk.management/export/jmm.h
+jdk.management jdk/src/share/lib/management/* jdk/newsrc/share/etc/jdk.management/lib/management/*
+#
+jdk.rmi jdk/src/share/doc/stub/java/rmi/activation/ActivationGroup_Stub.java jdk/newsrc/share/etc/jdk.rmi/doc/stub/java/rmi/activation/ActivationGroup_Stub.java
+jdk.rmi jdk/src/windows/bin/java-rmi.c jdk/newsrc/windows/native/jdk.rmi/bin/java-rmi.c
+#
+jdk.scripting jdk/src/closed/share/doc/rhino/MPL-1.1.txt jdk/newsrc/share/etc/jdk.scripting/doc/rhino/MPL-1.1.txt
+jdk.scripting jdk/src/closed/share/npt/manual.html jdk/newsrc/share/etc/jdk.scripting/npt/manual.html
+#
+jdk.tools jdk/src/share/back/* jdk/newsrc/share/native/jdk.tools/back/*
+jdk.tools jdk/src/share/back/export/sys.h jdk/newsrc/share/native/jdk.tools/back/export/sys.h
+jdk.tools jdk/src/share/npt/* jdk/newsrc/share/native/jdk.tools/npt/*
+jdk.tools jdk/src/share/transport/shmem/* jdk/newsrc/share/native/jdk.tools/transport/shmem/*
+jdk.tools jdk/src/share/transport/socket/* jdk/newsrc/share/native/jdk.tools/socket/shmem/*
+jdk.tools jdk/src/share/javavm/export/classfile_constants.h jdk/newsrc/share/native/jdk.tools/export/classfile_constants.h
+jdk.tools jdk/src/share/javavm/export/jdwpTransport.h jdk/newsrc/share/native/jdk.tools/export/jdwpTransport.h
+jdk.tools jdk/src/share/javavm/export/jvmticmlr.h jdk/newsrc/share/native/jdk.tools/export/jvmticmlr.h
+jdk.tools jdk/src/share/javavm/export/jvmti.h jdk/newsrc/share/native/jdk.tools/export/jvmti.h
+jdk.tools jdk/src/windows/back/mutex_md.h jdk/newsrc/windows/native/jdk.tools/back/mutex_md.h
+jdk.tools jdk/src/windows/resource/unpack200_proto.exe.manifest jdk/newsrc/windows/native/jdk.tools/resource/unpack200_proto.exe.manifest
+jdk.tools jdk/src/windows/transport/shmem/* jdk/newsrc/windows/native/jdk.tools/transport/shmem/*
+jdk.tools jdk/src/share/native/com/sun/tools/jdi/* jdk/newsrc/share/native/jdk.tools/com/sun/tools/jdi/*
+#
+jdk.ucrypto jdk/src/closed/share/lib/security/ucrypto-solaris.cfg jdk/newsrc/share/etc/jdk.ucrypto/lib/security/ucrypto-solaris.cfg
+jdk.ucrypto jdk/src/closed/solaris/native/com/oracle/security/ucrypto/* jdk/newsrc/solaris/native/jdk.ucrypto/com/oracle/security/ucrypto/*
+jdk.ucrypto jdk/src/closed/solaris/native/com/oracle/security/ucrypto/security/* jdk/newsrc/solaris/native/jdk.ucrypto/com/oracle/security/ucrypto/security/*
+jdk.ucrypto jdk/src/closed/solaris/native/com/oracle/security/ucrypto/sys/crypto/* jdk/newsrc/solaris/native/jdk.ucrypto/com/oracle/security/ucrypto/sys/crypto/*
+#
+jdk.jobjc jdk/src/macosx/native/jobjc/* jdk/newsrc/macosx/native/jdk.jobjc/*
+jdk.jobjc jdk/src/macosx/native/jobjc/JObjC.xcodeproj/* jdk/newsrc/macosx/native/jdk.jobjc/JObjC.xcodeproj/*
+jdk.jobjc jdk/src/macosx/native/jobjc/src/core/* jdk/newsrc/macosx/native/jdk.jobjc/core/*
+jdk.jobjc jdk/src/macosx/native/jobjc/src/core/java/com/apple/jobjc/* jdk/newsrc/macosx/native/jdk.jobjc/core/java/com/apple/jobjc/*
+jdk.jobjc jdk/src/macosx/native/jobjc/src/core/native/* jdk/newsrc/macosx/native/jdk.jobjc/core/native/*
+jdk.jobjc jdk/src/macosx/native/jobjc/src/generator/java/com/apple/internal/jobjc/generator/* jdk/newsrc/macosx/native/jdk.jobjc/generator/java/com/apple/internal/jobjc/generator/*
+jdk.jobjc jdk/src/macosx/native/jobjc/src/generator/java/com/apple/internal/jobjc/generator/classes/* jdk/newsrc/macosx/native/jdk.jobjc/generator/java/com/apple/internal/jobjc/generator/classes/*
+jdk.jobjc jdk/src/macosx/native/jobjc/src/generator/java/com/apple/internal/jobjc/generator/model/* jdk/newsrc/macosx/native/jdk.jobjc/generator/java/com/apple/internal/jobjc/generator/model/*
+jdk.jobjc jdk/src/macosx/native/jobjc/src/generator/java/com/apple/internal/jobjc/generator/model/coders/* jdk/newsrc/macosx/native/jdk.jobjc/generator/java/com/apple/internal/jobjc/generator/model/coders/*
+jdk.jobjc jdk/src/macosx/native/jobjc/src/generator/java/com/apple/internal/jobjc/generator/model/types/* jdk/newsrc/macosx/native/jdk.jobjc/generator/java/com/apple/internal/jobjc/generator/model/types/*
+jdk.jobjc jdk/src/macosx/native/jobjc/src/generator/java/com/apple/internal/jobjc/generator/utils/* jdk/newsrc/macosx/native/jdk.jobjc/generator/java/com/apple/internal/jobjc/generator/utils/*
+jdk.jobjc jdk/src/macosx/native/jobjc/src/generator/java/com/apple/jobjc/* jdk/newsrc/macosx/native/jdk.jobjc/generator/java/com/apple/jobjc/*
+jdk.jobjc jdk/src/macosx/native/jobjc/src/runtime-additions/java/com/apple/jobjc/* jdk/newsrc/macosx/native/jdk.jobjc/runtime-additions/java/com/apple/jobjc/*
+jdk.jobjc jdk/src/macosx/native/jobjc/src/runtime-additions/native/* jdk/newsrc/macosx/native/jdk.jobjc/runtime-additions/native/*
+jdk.jobjc jdk/src/macosx/native/jobjc/src/tests/java/com/apple/jobjc/* jdk/newsrc/macosx/native/jdk.jobjc/tests/java/com/apple/jobjc/*
+jdk.jobjc jdk/src/macosx/native/jobjc/src/tests/native/* jdk/newsrc/macosx/native/jdk.jobjc/tests/native/*
+#
+jdk.jaxp jaxp/src/com/sun/org/apache/xalan/META-INF/services/* jdk/newsrc/share/etc/jdk.jaxp/com/sun/org/apache/xalan/META-INF/services/*
+jdk.jaxp jdk/src/share/classes/com/sun/org/apache/xml/internal/security/resource/schema/* jdk/newsrc/share/etc/jdk.jaxp/com/sun/org/apache/xml/internal/security/resource/schema/*
+#
+jdk.jaxws jaxws/src/share/jaxws_classes/com/sun/tools/etc/META-INF/services/* jdk/newsrc/share/etc/jdk.jaxws/com/sun/tools/etc/META-INF/services/*
+jdk.jaxws jaxws/src/share/jaxws_classes/javax/annotation/* jdk/newsrc/share/mclasses/jdk.jaxws/javax/annotation/*
+#
+jdk.scripting jdk/src/macosx/native/apple/applescript/* jdk/newsrc/macosx/native/jdk.scripting/apple/applescript/*

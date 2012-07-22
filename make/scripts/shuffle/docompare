@@ -1,0 +1,71 @@
+#
+# Copyright (c) 2012, Oracle and/or its affiliates. All rights reserved.
+# DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+#
+# This code is free software; you can redistribute it and/or modify it
+# under the terms of the GNU General Public License version 2 only, as
+# published by the Free Software Foundation.
+#
+# This code is distributed in the hope that it will be useful, but WITHOUT
+# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+# FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+# version 2 for more details (a copy is included in the LICENSE file that
+# accompanied this code).
+#
+# You should have received a copy of the GNU General Public License version
+# 2 along with this work; if not, write to the Free Software Foundation,
+# Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
+#
+# Please contact Oracle, 500 Oracle Parkway, Redwood Shores, CA 94065 USA
+# or visit www.oracle.com if you need additional information or have any
+# questions.
+#
+
+if [ "$MAKESHUFFLE_SRCDIR" = "" ]; then
+  echo Please set MAKESHUFFLE_SRCDIR
+  exit 1
+fi
+set -x
+#
+# Sort behaves strangely in other locales
+#
+export LC_ALL=C
+
+find jdk/src corba/src jaxp/src jaxws/src langtools/src -type f | \
+  egrep -v '/.hg/' | \
+  egrep -v '/man/' | \
+  egrep -v 'jdk/make/' | \
+  egrep -v 'jdk/cscope/' | \
+  egrep -v 'jdk/makefiles/' | \
+  egrep -v '/demo/' | \
+  egrep -v '/sample/' | \
+  egrep -v 'langtools/test/' | \
+  egrep -v 'langtools/make/' | \
+  egrep -v 'corba/make/' | \
+  egrep -v '/test/' > orig.txt
+
+find jdk/newsrc corba/newsrc jaxp/newsrc jaxws/newsrc langtools/newsrc -type f \
+          > shuffled.txt 
+
+cat orig.txt | sed -e 's/^/ORIG /' > /tmp/orig.txt.$$
+cat shuffled.txt | sed -e 's/^/SHUF /' > /tmp/shuffled.txt.$$
+
+if [ ! -f $MAKESHUFFLE_SRCDIR/Reverse.class ]; then
+  (cd $MAKESHUFFLE_SRCDIR; javac Reverse.java)
+fi
+
+if [ ! -f $MAKESHUFFLE_SRCDIR/Compare.class ]; then
+  (cd $MAKESHUFFLE_SRCDIR; javac Compare.java)
+fi
+
+java -cp $MAKESHUFFLE_SRCDIR Reverse /tmp/shuffled.txt.$$ /tmp/shuffled.txt_r.$$
+java -cp $MAKESHUFFLE_SRCDIR Reverse /tmp/orig.txt.$$ /tmp/orig.txt_r.$$
+cat /tmp/shuffled.txt_r.$$ /tmp/orig.txt_r.$$ |sort  > /tmp/all.txt_r.$$
+java -cp $MAKESHUFFLE_SRCDIR Reverse /tmp/all.txt_r.$$ all.txt
+
+
+java -cp $MAKESHUFFLE_SRCDIR Compare all.txt |sort  > diffs.txt
+
+wc -l orig.txt shuffled.txt
+
+wc -l diffs.txt

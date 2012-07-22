@@ -1,0 +1,9 @@
+com/sun/java/browser/dom/DOMAccessException.class
+com/sun/java/browser/dom/DOMAccessor.class
+com/sun/java/browser/dom/DOMAction.class
+com/sun/java/browser/dom/DOMService.class
+com/sun/java/browser/dom/DOMServiceProvider.class
+com/sun/java/browser/dom/DOMUnsupportedException.class
+com/sun/java/browser/net/ProxyInfo.class
+com/sun/java/browser/net/ProxyService.class
+com/sun/java/browser/net/ProxyServiceProvider.class

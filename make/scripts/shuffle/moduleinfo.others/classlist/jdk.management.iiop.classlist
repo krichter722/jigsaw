@@ -1,0 +1,12 @@
+com/sun/jmx/remote/protocol/iiop/ClientProvider.class
+com/sun/jmx/remote/protocol/iiop/IIOPProxyImpl.class
+com/sun/jmx/remote/protocol/iiop/ProxyInputStream.class
+com/sun/jmx/remote/protocol/iiop/ServerProvider.class
+javax/management/remote/rmi/_RMIConnectionImpl_Tie.class
+javax/management/remote/rmi/_RMIConnection_Stub.class
+javax/management/remote/rmi/_RMIServerImpl_Tie.class
+javax/management/remote/rmi/_RMIServer_Stub.class
+org/omg/stub/javax/management/remote/rmi/_RMIConnectionImpl_Tie.class
+org/omg/stub/javax/management/remote/rmi/_RMIConnection_Stub.class
+org/omg/stub/javax/management/remote/rmi/_RMIServerImpl_Tie.class
+org/omg/stub/javax/management/remote/rmi/_RMIServer_Stub.class

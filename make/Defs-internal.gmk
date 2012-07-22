@@ -42,7 +42,7 @@ $(DATE) '+%Y %m %d %H %M %S' | $(NAWK) '{ print $$1,$$2,$$3,$$4,$$5,$$6,($$4*360
 $(DATE) '+%Y-%m-%d %H:%M:%S' > $(BUILDTIMESDIR)/build_time_start_$1_human_readable
 endef
 
-# Indicate that we started to build a sub repository and record starting time. 
+# Indicate that we started to build a sub repository and record starting time.
 define MakeStart
 $(call RecordStartTime,$1)
 $(PRINTF) "\n\n%s\n%s\n##### %-60.60s #####\n%s\n\n" \
@@ -54,7 +54,7 @@ endef
 
 # Record ending time and calculate the difference and store it in a
 # easy to read format. Handles builds that cross midnight. Expects
-# that a build will never take 24 hours or more. 
+# that a build will never take 24 hours or more.
 define RecordEndTime
 $(DATE) '+%Y %m %d %H %M %S' | $(NAWK) '{ print $$1,$$2,$$3,$$4,$$5,$$6,($$4*3600+$$5*60+$$6) }' > $(BUILDTIMESDIR)/build_time_end_$1
 $(DATE) '+%Y-%m-%d %H:%M:%S' > $(BUILDTIMESDIR)/build_time_end_$1_human_readable
@@ -66,14 +66,14 @@ endef
 
 # Indicate that we are done.
 # Record ending time and print out the total time it took to build.
-define MakeFinish 
-$(if $(REPORT_BUILD_TIMES),$(call RecordEndTime,$1),) 
+define MakeFinish
+$(if $(REPORT_BUILD_TIMES),$(call RecordEndTime,$1),)
 $(PRINTF) "%s\n##### %-60.60s #####\n%s\n##### %-60.60s #####\n%s\n\n" \
 "########################################################################" \
 "Leaving $1 for target(s) $2" \
 "########################################################################" \
 $(if $(REPORT_BUILD_TIMES),"Build time `$(CAT) $(BUILDTIMESDIR)/build_time_diff_$1` for target(s) $2","") \
-"########################################################################" 
+"########################################################################"
 endef
 
 # Find all build_time_* files and print their contents in a list sorted
@@ -98,6 +98,7 @@ ABS_LANGTOOLS_TOPDIR:=$(call OptFullPath,"$(LANGTOOLS_TOPDIR)")
 ABS_CORBA_TOPDIR:=$(call OptFullPath,"$(CORBA_TOPDIR)")
 ABS_JAXP_TOPDIR:=$(call OptFullPath,"$(JAXP_TOPDIR)")
 ABS_JAXWS_TOPDIR:=$(call OptFullPath,"$(JAXWS_TOPDIR)")
+ABS_BDB_TOPDIR:=$(call OptFullPath,"$(BDB_TOPDIR)")
 ABS_JDK_TOPDIR:=$(call OptFullPath,"$(JDK_TOPDIR)")
 ABS_HOTSPOT_TOPDIR:=$(call OptFullPath,"$(HOTSPOT_TOPDIR)")
 ABS_INSTALL_TOPDIR:=$(call OptFullPath,"$(INSTALL_TOPDIR)")
@@ -154,6 +155,25 @@ ifndef BUILD_JAXWS
   endif
 endif
 
+# If USE_SYSTEM_BDB is defined then simply ignore the bdb repo.
+# If the bdb repo does not exist then set USE_SYSTEM_BDB
+BDB_SRC_AVAILABLE := $(call MkExists,$(BDB_TOPDIR)/make/Makefile)
+ifdef USE_SYSTEM_BDB
+  BUILD_BDB := false
+  USE_SYSTEM_BDB := true
+else
+  ifndef BUILD_BDB
+    ifdef ALT_BDB_IMPORT_PATH
+      BUILD_BDB := false
+    else
+      BUILD_BDB := $(BDB_SRC_AVAILABLE)
+      ifeq ($(BUILD_BDB),false)
+        USE_SYSTEM_BDB := true
+      endif
+    endif
+  endif
+endif
+
 JDK_SRC_AVAILABLE := $(call MkExists,$(JDK_TOPDIR)/make/Makefile)
 ifndef BUILD_JDK
   BUILD_JDK := $(JDK_SRC_AVAILABLE)
@@ -193,7 +213,7 @@ endif
 BUNDLE_RULES = $(JDK_TOPDIR)/make/closed/bundles.gmk
 ifeq ($(SKIP_BUNDLES_BUILD), true)
   BUNDLE_RULES_AVAILABLE := false
-else 
+else
   BUNDLE_RULES_AVAILABLE := $(call MkExists,$(BUNDLE_RULES))
 endif
 
@@ -214,7 +234,7 @@ ifdef OPENJDK
     SKIP_COMPARE_IMAGES = true
   endif
 else
-  
+
   # Various non-OPENJDK reasons to NOT build the deploy repository
   ifeq ($(ARCH), ia64)
     BUILD_DEPLOY=false
@@ -267,7 +287,7 @@ ifndef NO_DOCS
       GENERATE_DOCS=false
     endif
   endif
-  # If langtools, corba, jaxp, and jaxws are not being built, 
+  # If langtools, corba, jaxp, and jaxws are not being built,
   #   a full jdk javadoc is not possible
   ifneq ($(BUILD_LANGTOOLS), true)
     GENERATE_DOCS=false
@@ -290,6 +310,9 @@ endif
 
 # Output directory for hotspot build
 HOTSPOT_DIR = $(ABS_OUTPUTDIR)/hotspot
+
+# Output directory for bdb build
+BDB_DIR = $(ABS_OUTPUTDIR)/bdb
 
 # If we are building components
 ifndef ALT_LANGTOOLS_DIST

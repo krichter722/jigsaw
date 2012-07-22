@@ -1,0 +1,45 @@
+NOTE. This currently only runs on Linux. But the generated scripts
+should work on all platforms
+
+1. Set $MAKESHUFFLE_SRCDIR to the directory containing this README
+   Also, you can add it to your path
+
+2. cd to the root of a jigsaw forest
+
+3. make (ie. do a build)
+
+4. $MAKESHUFFLE_SRCDIR/makeshufflescripts
+   This has only been tested on Linux. Some tweaks to the other
+   files in this directory are necssary to run it on a different platform.
+   Scripts are written to shufflescripts directory (off root).
+
+5. to shuffle the source: sh shufflescripts/shuffle.sh 
+   This puts the shuffled source into a directories called "newsrc"
+   under each of the repos.
+
+6. to unshuffle the source: sh shufflescripts/unshuffle.sh
+   This copies any changed sources back again
+
+
+To compare the two source trees run $MAKESHUFFLE_SRCDIR/docompare (from 
+the jigsaw root). This creates a file called diffs.txt which is a list
+of filenames that are not accounted for in the shuffle. See also the 
+beginning of the docompare script for patterns that are not checked
+regardless.
+
+There are various files of the form <module>.includes which can be tweaked/
+They contain directory names (and file name patterns) of additional files
+that belong to each module.
+
+moduleinfo.others
+
+This directory contains moduleinfo from the build output of the
+other platforms (other than linux). This contains the names of platform
+specific classes (and native code directories) that wouldn't be seen
+on the current platform build. If a significant platform specific change
+is made (on one of the other platforms) this information may need to be
+refreshed.
+
+--o--
+
+michael.x.mcmahon@oracle.com
