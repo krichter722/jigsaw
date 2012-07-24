@@ -1,0 +1,7 @@
+org/omg/CORBA/doc-files/*
+# the following directories are just being included
+# without checking if the code is dead or unnecessary
+com/sun/corba/se/GiopIDL/*
+com/sun/corba/se/impl/protocol/oldlocal/*
+com/sun/corba/se/spi/logging/data/*
+com/sun/tools/corba/se/logutil/*

@@ -57,6 +57,7 @@ JDK_DEFAULT_TEST_LIST = \
 	jdk_beans1 \
 	jdk_io  \
 	jdk_lang  \
+	jdk_jigsaw \
 	jdk_math  \
 	jdk_misc  \
 	jdk_net  \

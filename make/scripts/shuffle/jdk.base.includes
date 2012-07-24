@@ -1,0 +1,4 @@
+java/lang/doc-files/*
+java/net/doc-files/*
+sun/net/spi/nameservice/dns/META-INF/services/*
+sun/nio/cs/ext/META-INF/services/*

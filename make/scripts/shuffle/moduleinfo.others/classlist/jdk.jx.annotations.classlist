@@ -1,0 +1,6 @@
+javax/annotation/Generated.class
+javax/annotation/PostConstruct.class
+javax/annotation/PreDestroy.class
+javax/annotation/Resource$AuthenticationType.class
+javax/annotation/Resource.class
+javax/annotation/Resources.class

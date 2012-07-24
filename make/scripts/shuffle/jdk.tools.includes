@@ -1,0 +1,6 @@
+com/sun/jdi/doc-files/signature.html
+com/sun/servicetag/resources/*
+com/sun/tools/example/doc/*
+com/sun/tools/example/trace/*
+com/sun/tools/jdi/META-INF/services/*
+sun/tools/attach/META-INF/services/*
