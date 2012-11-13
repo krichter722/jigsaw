@@ -23,97 +23,66 @@
 # questions.
 #
 
-AC_DEFUN_ONCE([TOOLCHAIN_SETUP_VISUAL_STUDIO_ENV],
+# $1 = compiler to test (CC or CXX)
+# $2 = human readable name of compiler (C or C++)
+AC_DEFUN([TOOLCHAIN_CHECK_COMPILER_VERSION],
 [
+  COMPILER=[$]$1
+  COMPILER_NAME=$2
 
-# Check if the VS env variables were setup prior to running configure.
-# If not, then find vcvarsall.bat and run it automatically, and integrate
-# the set env variables into the spec file.
-SETUPDEVENV="# No special vars"
-if test "x$OPENJDK_BUILD_OS" = "xwindows"; then
-    # If vcvarsall.bat has been run, then VCINSTALLDIR is set.
-    if test "x$VCINSTALLDIR" != x; then
-        # No further setup is needed. The build will happen from this kind
-        # of shell.
-        SETUPDEVENV="# This spec file expects that you are running bash from within a VS command prompt."
-        # Make sure to remind you, if you forget to run make from a cygwin bash shell
-        # that is spawned "bash -l" from a VS command prompt.
-        CHECK_FOR_VCINSTALLDIR=yes
-        AC_MSG_CHECKING([if you are running from within a VS command prompt])
-        AC_MSG_RESULT([yes])
+  if test "x$OPENJDK_TARGET_OS" = xsolaris; then
+    # Make sure we use the Sun Studio compiler and not gcc on Solaris, which won't work
+    COMPILER_VERSION_TEST=`$COMPILER -V 2>&1 | $HEAD -n 1`
+    $ECHO $COMPILER_VERSION_TEST | $GREP "^.*: Sun $COMPILER_NAME" > /dev/null
+    if test $? -ne 0; then
+      GCC_VERSION_TEST=`$COMPILER --version 2>&1 | $HEAD -n 1`
+      
+      AC_MSG_NOTICE([The $COMPILER_NAME compiler (located as $COMPILER) does not seem to be the required Sun Studio compiler.])
+      AC_MSG_NOTICE([The result from running with -V was: "$COMPILER_VERSION_TEST" and with --version: "$GCC_VERSION_TEST"])
+      AC_MSG_ERROR([Sun Studio compiler is required. Try setting --with-tools-dir.])
     else
-        # Ah, we have not yet run vcvarsall.bat/vsvars32.bat/vsvars64.bat. Lets do that. First find it.
-        if test "x$VS100COMNTOOLS" != x; then
-            VARSBAT=`find "$VS100COMNTOOLS/../.." -name vcvarsall.bat`
-	    SEARCH_ROOT="$VS100COMNTOOLS"
-        else
-            VARSBAT=`find "$PROGRAMFILES" -name vcvarsall.bat`
-	    SEARCH_ROOT="$PROGRAMFILES"
-        fi
-        VCPATH=`dirname "$VARSBAT"`
-        VCPATH=`cygpath -w "$VCPATH"`
-	if test "x$VARSBAT" = x || test ! -d "$VCPATH"; then
-            AC_MSG_CHECKING([if we can find the VS installation])
-            AC_MSG_RESULT([no])
-            AC_MSG_ERROR([Tried to find a VS installation using both $SEARCH_ROOT but failed. Please run "c:\\cygwin\\bin\\bash.exe -l" from a VS command prompt and then run configure/make from there.])
-        fi
-        case "$LEGACY_OPENJDK_TARGET_CPU1" in
-          i?86)
-            VARSBAT_ARCH=x86
-            ;;
-          *)
-            VARSBAT_ARCH=$LEGACY_OPENJDK_TARGET_CPU1
-            ;;
-        esac
-        # Lets extract the variables that are set by vcvarsall.bat/vsvars32.bat/vsvars64.bat
-        cd $OUTPUT_ROOT
-        bash $SRC_ROOT/common/bin/extractvcvars.sh "$VARSBAT" "$VARSBAT_ARCH"
-	cd $CURDIR
-	if test ! -s $OUTPUT_ROOT/localdevenv.sh || test ! -s $OUTPUT_ROOT/localdevenv.gmk; then
-            AC_MSG_CHECKING([if we can extract the needed env variables])
-            AC_MSG_RESULT([no])
-            AC_MSG_ERROR([Could not succesfully extract the env variables needed for the VS setup. Please run "c:\\cygwin\\bin\\bash.exe -l" from a VS command prompt and then run configure/make from there.])
-        fi 
-        # Now set all paths and other env variables. This will allow the rest of 
-        # the configure script to find and run the compiler in the proper way.
-        . $OUTPUT_ROOT/localdevenv.sh
-        AC_MSG_CHECKING([if we can find the VS installation])
-	if test "x$VCINSTALLDIR" != x; then 
-            AC_MSG_RESULT([$VCINSTALLDIR])
-        else 
-            AC_MSG_RESULT([no])
-            AC_MSG_ERROR([Could not find VS installation. Please install. If you are sure you have installed VS, then please run "c:\\cygwin\\bin\\bash.exe -l" from a VS command prompt and then run configure/make from there.])
-        fi
-        CHECK_FOR_VCINSTALLDIR=no
-	SETUPDEVENV="include $OUTPUT_ROOT/localdevenv.gmk"
-
-	AC_MSG_CHECKING([for msvcr100.dll])
-        AC_ARG_WITH(msvcr100dll, [AS_HELP_STRING([--with-msvcr100dll],
-            [copy this msvcr100.dll into the built JDK])])
-        if test "x$with_msvcr100dll" != x; then
-            MSVCR100DLL="$with_msvcr100dll"
-        else
-            if test "x$OPENJDK_TARGET_CPU_BITS" = x64; then
-                MSVCR100DLL=`find "$VCINSTALLDIR/.." -name msvcr100.dll | grep x64 | head --lines 1`
-            else
-                MSVCR100DLL=`find "$VCINSTALLDIR/.." -name msvcr100.dll | grep x86 | grep -v ia64 | grep -v x64 | head --lines 1`
-                if test "x$MSVCR100DLL" = x; then
-                    MSVCR100DLL=`find "$VCINSTALLDIR/.." -name msvcr100.dll | head --lines 1`
-                fi
-            fi
-        fi
-	if test "x$MSVCR100DLL" = x; then
-           AC_MSG_RESULT([no])
-	   AC_MSG_ERROR([Could not find msvcr100.dll !])
-        fi
-        AC_MSG_RESULT([$MSVCR100DLL])
-	SPACESAFE(MSVCR100DLL,[the path to msvcr100.dll])
+      COMPILER_VERSION=`$ECHO $COMPILER_VERSION_TEST | $SED -n "s/^.*@<:@ ,\t@:>@$COMPILER_NAME@<:@ ,\t@:>@\(@<:@1-9@:>@\.@<:@0-9@:>@@<:@0-9@:>@*\).*/\1/p"`
+      COMPILER_VENDOR="Sun Studio"
     fi
-fi
-AC_SUBST(SETUPDEVENV)
-AC_SUBST(CHECK_FOR_VCINSTALLDIR)
-AC_SUBST(MSVCR100DLL)
+  elif test  "x$OPENJDK_TARGET_OS" = xwindows; then
+    # First line typically looks something like:
+    # Microsoft (R) 32-bit C/C++ Optimizing Compiler Version 16.00.30319.01 for 80x86
+    COMPILER_VERSION_TEST=`$COMPILER 2>&1 | $HEAD -n 1`
+    COMPILER_VERSION=`$ECHO $COMPILER_VERSION_TEST | $SED -n "s/^.*Version \(@<:@1-9@:>@@<:@0-9.@:>@*\) .*/\1/p"`
+    COMPILER_VENDOR="Microsoft CL.EXE"
+    COMPILER_CPU_TEST=`$ECHO $COMPILER_VERSION_TEST | $SED -n "s/^.* for \(.*\)$/\1/p"`
+    if test "x$OPENJDK_TARGET_CPU" = "xx86"; then
+      if test "x$COMPILER_CPU_TEST" != "x80x86"; then
+        AC_MSG_ERROR([Target CPU mismatch. We are building for $OPENJDK_TARGET_CPU but CL is for "$COMPILER_CPU_TEST"; expected "80x86".])
+      fi
+    elif test "x$OPENJDK_TARGET_CPU" = "xx86_64"; then
+      if test "x$COMPILER_CPU_TEST" != "xx64"; then
+        AC_MSG_ERROR([Target CPU mismatch. We are building for $OPENJDK_TARGET_CPU but CL is for "$COMPILER_CPU_TEST"; expected "x64".])
+      fi
+    fi
+  else
+    COMPILER_VERSION_TEST=`$COMPILER --version 2>&1 | $HEAD -n 1`
+    # Check that this is likely to be GCC.
+    $COMPILER --version 2>&1 | $GREP "Free Software Foundation" > /dev/null
+    if test $? -ne 0; then
+      AC_MSG_NOTICE([The $COMPILER_NAME compiler (located as $COMPILER) does not seem to be the required GCC compiler.])
+      AC_MSG_NOTICE([The result from running with --version was: "$COMPILER_VERSION_TEST"])
+      AC_MSG_ERROR([GCC compiler is required. Try setting --with-tools-dir.])
+    fi
+    
+    # First line typically looks something like:
+    # gcc (Ubuntu/Linaro 4.5.2-8ubuntu4) 4.5.2
+    COMPILER_VERSION=`$ECHO $COMPILER_VERSION_TEST | $SED -n "s/^.* \(@<:@1-9@:>@@<:@0-9.@:>@*\)/\1/p"`
+    COMPILER_VENDOR=`$ECHO $COMPILER_VERSION_TEST | $SED -n "s/^\(.*\) @<:@1-9@:>@@<:@0-9.@:>@*/\1/p"`
+  fi
+  # This sets CC_VERSION or CXX_VERSION. (This comment is a grep marker)
+  $1_VERSION="$COMPILER_VERSION"
+  # This sets CC_VENDOR or CXX_VENDOR. (This comment is a grep marker)
+  $1_VENDOR="$COMPILER_VENDOR"
+
+  AC_MSG_NOTICE([Using $COMPILER_VENDOR $COMPILER_NAME compiler version $COMPILER_VERSION (located at $COMPILER)])
 ])
+
 
 AC_DEFUN_ONCE([TOOLCHAIN_SETUP_SYSROOT_AND_OUT_OPTIONS],
 [
@@ -122,9 +91,6 @@ AC_DEFUN_ONCE([TOOLCHAIN_SETUP_SYSROOT_AND_OUT_OPTIONS],
 # Configure the development tool paths and potential sysroot.
 #
 AC_LANG(C++)
-DEVKIT=
-SYS_ROOT=/
-AC_SUBST(SYS_ROOT)
 
 # The option used to specify the target .o,.a or .so file.
 # When compiling, how to specify the to be created object file.
@@ -141,8 +107,67 @@ AC_SUBST(LD_OUT_OPTION)
 AC_SUBST(AR_OUT_OPTION)
 ])
 
-AC_DEFUN_ONCE([TOOLCHAIN_SETUP_PATHS],
+# $1 = compiler to test (CC or CXX)
+# $2 = human readable name of compiler (C or C++)
+# $3 = list of compiler names to search for
+AC_DEFUN([TOOLCHAIN_FIND_COMPILER],
 [
+  COMPILER_NAME=$2
+
+  # Do a first initial attempt at searching the list of compiler names.
+  # AC_PATH_PROGS can't be run multiple times with the same variable,
+  # so create a new name for this run.
+  AC_PATH_PROGS(POTENTIAL_$1, $3)
+  $1=$POTENTIAL_$1
+
+  if test "x$[$]$1" = x; then
+      HELP_MSG_MISSING_DEPENDENCY([devkit])
+      AC_MSG_ERROR([Could not find a $COMPILER_NAME compiler. $HELP_MSG])
+  fi
+  BASIC_FIXUP_EXECUTABLE($1)
+  AC_MSG_CHECKING([resolved symbolic links for $1])
+  TEST_COMPILER="[$]$1"
+  BASIC_REMOVE_SYMBOLIC_LINKS(TEST_COMPILER)
+  AC_MSG_RESULT([$TEST_COMPILER])
+  AC_MSG_CHECKING([if $1 is disguised ccache])
+  
+  COMPILER_BASENAME=`$BASENAME "$TEST_COMPILER"`
+  if test "x$COMPILER_BASENAME" = "xccache"; then
+    AC_MSG_RESULT([yes, trying to find proper $COMPILER_NAME compiler])
+    # We /usr/lib/ccache in the path, so cc is a symlink to /usr/bin/ccache.
+    # We want to control ccache invocation ourselves, so ignore this cc and try
+    # searching again.
+
+    # Remove the path to the fake ccache cc from the PATH
+    RETRY_COMPILER_SAVED_PATH="$PATH"
+    COMPILER_DIRNAME=`$DIRNAME [$]$1`
+    PATH="`$ECHO $PATH | $SED -e "s,$COMPILER_DIRNAME,,g" -e "s,::,:,g" -e "s,^:,,g"`"
+
+    # Try again looking for our compiler
+    AC_CHECK_TOOLS(PROPER_COMPILER_$1, $3)
+    BASIC_FIXUP_EXECUTABLE(PROPER_COMPILER_$1)
+    PATH="$RETRY_COMPILER_SAVED_PATH"
+
+    AC_MSG_CHECKING([for resolved symbolic links for $1])
+    BASIC_REMOVE_SYMBOLIC_LINKS(PROPER_COMPILER_$1)
+    AC_MSG_RESULT([$PROPER_COMPILER_$1])
+    $1="$PROPER_COMPILER_$1"
+  else
+    AC_MSG_RESULT([no, keeping $1])
+    $1="$TEST_COMPILER"
+  fi
+  TOOLCHAIN_CHECK_COMPILER_VERSION([$1], [$COMPILER_NAME])
+])
+
+
+AC_DEFUN([TOOLCHAIN_SETUP_PATHS],
+[
+if test "x$OPENJDK_TARGET_OS" = "xwindows"; then
+  TOOLCHAIN_SETUP_VISUAL_STUDIO_ENV
+fi
+
+AC_SUBST(MSVCR_DLL)
+
 # If --build AND --host is set, then the configure script will find any
 # cross compilation tools in the PATH. Cross compilation tools
 # follows the cross compilation standard where they are prefixed with ${host}.
@@ -153,44 +178,28 @@ AC_DEFUN_ONCE([TOOLCHAIN_SETUP_PATHS],
 # Setting only --host, does not seem to be really supported.
 # Please set both --build and --host if you want to cross compile.
 
-DEFINE_CROSS_COMPILE_ARCH=""
-HOSTCC=""
-HOSTCXX=""
-HOSTLD=""
-AC_SUBST(DEFINE_CROSS_COMPILE_ARCH)
-AC_MSG_CHECKING([if this is a cross compile])
-if test "x$OPENJDK_BUILD_SYSTEM" != "x$OPENJDK_TARGET_SYSTEM"; then
-    AC_MSG_RESULT([yes, from $OPENJDK_BUILD_SYSTEM to $OPENJDK_TARGET_SYSTEM])
-    # We have detected a cross compile!
-    DEFINE_CROSS_COMPILE_ARCH="CROSS_COMPILE_ARCH:=$LEGACY_OPENJDK_TARGET_CPU1"
+if test "x$COMPILE_TYPE" = "xcross"; then
     # Now we to find a C/C++ compiler that can build executables for the build
     # platform. We can't use the AC_PROG_CC macro, since it can only be used
-    # once.
-    AC_PATH_PROGS(HOSTCC, [cl cc gcc])
-    WHICHCMD(HOSTCC)
-    AC_PATH_PROGS(HOSTCXX, [cl CC g++])
-    WHICHCMD(HOSTCXX)
-    AC_PATH_PROG(HOSTLD, ld)
-    WHICHCMD(HOSTLD)
-    # Building for the build platform should be easy. Therefore
-    # we do not need any linkers or assemblers etc.    
-else
-    AC_MSG_RESULT([no])
+    # once. Also, we need to do this before adding a tools dir to the path,
+    # otherwise we might pick up cross-compilers which don't use standard naming.
+    # Otherwise, we'll set the BUILD_tools to the native tools, but that'll have
+    # to wait until they are properly discovered.
+    AC_PATH_PROGS(BUILD_CC, [cl cc gcc])
+    BASIC_FIXUP_EXECUTABLE(BUILD_CC)
+    AC_PATH_PROGS(BUILD_CXX, [cl CC g++])
+    BASIC_FIXUP_EXECUTABLE(BUILD_CXX)
+    AC_PATH_PROG(BUILD_LD, ld)
+    BASIC_FIXUP_EXECUTABLE(BUILD_LD)
 fi
+AC_SUBST(BUILD_CC)
+AC_SUBST(BUILD_CXX)
+AC_SUBST(BUILD_LD)
 
-# You can force the sys-root if the sys-root encoded into the cross compiler tools
-# is not correct.
-AC_ARG_WITH(sys-root, [AS_HELP_STRING([--with-sys-root],
-    [pass this sys-root to the compilers and linker (useful if the sys-root encoded in
-     the cross compiler tools is incorrect)])])
-
-if test "x$with_sys_root" != x; then
-    SYS_ROOT=$with_sys_root
-fi
-                     
 # If a devkit is found on the builddeps server, then prepend its path to the
 # PATH variable. If there are cross compilers available in the devkit, these
 # will be found by AC_PROG_CC et al.
+DEVKIT=
 BDEPS_CHECK_MODULE(DEVKIT, devkit, xxx,
                     [# Found devkit
                      PATH="$DEVKIT/bin:$PATH"
@@ -218,57 +227,46 @@ ORG_CFLAGS="$CFLAGS"
 ORG_CXXFLAGS="$CXXFLAGS"
 ORG_OBJCFLAGS="$OBJCFLAGS"
 
-AC_ARG_WITH([tools-dir], [AS_HELP_STRING([--with-tools-dir],
-	[search this directory for compilers and tools])], [TOOLS_DIR=$with_tools_dir])
-
-AC_ARG_WITH([devkit], [AS_HELP_STRING([--with-devkit],
-	[use this directory as base for tools-dir and sys-root])], [
-    if test "x$with_sys_root" != x; then
-      AC_MSG_ERROR([Cannot specify both --with-devkit and --with-sys-root at the same time])
-    fi
-    if test "x$with_tools_dir" != x; then
-      AC_MSG_ERROR([Cannot specify both --with-devkit and --with-tools-dir at the same time])
-    fi
-    TOOLS_DIR=$with_devkit/bin
-    SYS_ROOT=$with_devkit/$host_alias/libc
-    ])
-
 # autoconf magic only relies on PATH, so update it if tools dir is specified
 OLD_PATH="$PATH"
 if test "x$TOOLS_DIR" != x; then
   PATH=$TOOLS_DIR:$PATH
 fi
 
+
+### Locate C compiler (CC)
+
 # gcc is almost always present, but on Windows we
 # prefer cl.exe and on Solaris we prefer CC.
 # Thus test for them in this order.
-AC_PROG_CC([cl cc gcc])
-if test "x$CC" = x; then
-    HELP_MSG_MISSING_DEPENDENCY([devkit])
-    AC_MSG_ERROR([Could not find a compiler. $HELP_MSG])
-fi
-if test "x$CC" = xcc && test "x$OPENJDK_BUILD_OS" = xmacosx; then
-    # Do not use cc on MacOSX use gcc instead.
-    CC="gcc"
-fi
-WHICHCMD(CC)
-
-AC_PROG_CXX([cl CC g++])
-if test "x$CXX" = xCC && test "x$OPENJDK_BUILD_OS" = xmacosx; then
-    # The found CC, even though it seems to be a g++ derivate, cannot compile
-    # c++ code. Override.
-    CXX="g++"
-fi
-WHICHCMD(CXX)
-
-if test "x$CXX" = x || test "x$CC" = x; then
-    HELP_MSG_MISSING_DEPENDENCY([devkit])
-    AC_MSG_ERROR([Could not find the needed compilers! $HELP_MSG ])
+if test "x$OPENJDK_TARGET_OS" = xmacosx; then
+  # Do not probe for cc on MacOSX.
+  COMPILER_CHECK_LIST="cl gcc"
+else
+  COMPILER_CHECK_LIST="cl cc gcc"
 fi
 
-if test "x$OPENJDK_BUILD_OS" != xwindows; then
+TOOLCHAIN_FIND_COMPILER([CC],[C],[$COMPILER_CHECK_LIST])
+# Now that we have resolved CC ourself, let autoconf have it's go at it
+AC_PROG_CC([$CC])
+
+### Locate C++ compiler (CXX)
+
+if test "x$OPENJDK_TARGET_OS" = xmacosx; then
+  # Do not probe for CC on MacOSX.
+  COMPILER_CHECK_LIST="cl g++"
+else
+  COMPILER_CHECK_LIST="cl CC g++"
+fi
+TOOLCHAIN_FIND_COMPILER([CXX],[C++],[$COMPILER_CHECK_LIST])
+# Now that we have resolved CXX ourself, let autoconf have it's go at it
+AC_PROG_CXX([$CXX])
+
+### Locate other tools
+
+if test "x$OPENJDK_TARGET_OS" = xmacosx; then
     AC_PROG_OBJC
-    WHICHCMD(OBJC)
+    BASIC_FIXUP_EXECUTABLE(OBJC)
 else
     OBJC=
 fi
@@ -279,19 +277,11 @@ CFLAGS="$ORG_CFLAGS"
 CXXFLAGS="$ORG_CXXFLAGS"
 OBJCFLAGS="$ORG_OBJCFLAGS"
 
-# If we are not cross compiling, use the same compilers for
-# building the build platform executables.
-if test "x$DEFINE_CROSS_COMPILE_ARCH" = x; then
-    HOSTCC="$CC"
-    HOSTCXX="$CXX"
-fi
-
-AC_CHECK_TOOL(LD, ld)
-WHICHCMD(LD)
 LD="$CC"
 LDEXE="$CC"
 LDCXX="$CXX"
 LDEXECXX="$CXX"
+AC_SUBST(LD)
 # LDEXE is the linker to use, when creating executables.
 AC_SUBST(LDEXE)
 # Linking C++ libraries.
@@ -299,44 +289,71 @@ AC_SUBST(LDCXX)
 # Linking C++ executables.
 AC_SUBST(LDEXECXX)
 
-AC_CHECK_TOOL(AR, ar)
-WHICHCMD(AR)
-if test "x$OPENJDK_BUILD_OS" = xmacosx; then
+if test "x$OPENJDK_TARGET_OS" != xwindows; then
+    AC_CHECK_TOOL(AR, ar)
+    BASIC_FIXUP_EXECUTABLE(AR)
+fi
+if test "x$OPENJDK_TARGET_OS" = xmacosx; then
     ARFLAGS="-r"
 else
     ARFLAGS=""
 fi
 AC_SUBST(ARFLAGS)
 
+# For hotspot, we need these in Windows mixed path; other platforms keep them the same
+HOTSPOT_CXX="$CXX"
+HOTSPOT_LD="$LD"
+AC_SUBST(HOTSPOT_CXX)
+AC_SUBST(HOTSPOT_LD)
+
 COMPILER_NAME=gcc
 COMPILER_TYPE=CC
-AS_IF([test "x$OPENJDK_BUILD_OS" = xwindows], [
+AS_IF([test "x$OPENJDK_TARGET_OS" = xwindows], [
     # For now, assume that we are always compiling using cl.exe. 
     CC_OUT_OPTION=-Fo
     EXE_OUT_OPTION=-out:
     LD_OUT_OPTION=-out:
     AR_OUT_OPTION=-out:
-    # On Windows, reject /usr/bin/link, which is a cygwin
+    # On Windows, reject /usr/bin/link (as determined in CYGWIN_LINK), which is a cygwin
     # program for something completely different.
-    AC_CHECK_PROG([WINLD], [link],[link],,, [/usr/bin/link])
+    AC_CHECK_PROG([WINLD], [link],[link],,, [$CYGWIN_LINK])
     # Since we must ignore the first found link, WINLD will contain
     # the full path to the link.exe program.
-    WHICHCMD_SPACESAFE([WINLD])
+    BASIC_FIXUP_EXECUTABLE(WINLD)
+    printf "Windows linker was found at $WINLD\n"
+    AC_MSG_CHECKING([if the found link.exe is actually the Visual Studio linker])
+    "$WINLD" --version > /dev/null
+    if test $? -eq 0 ; then
+      AC_MSG_RESULT([no])
+      AC_MSG_ERROR([This is the Cygwin link tool. Please check your PATH and rerun configure.])
+    else
+      AC_MSG_RESULT([yes])
+    fi
     LD="$WINLD"
     LDEXE="$WINLD"
     LDCXX="$WINLD"
     LDEXECXX="$WINLD"
-    # Set HOSTLD to same as LD until we fully support cross compilation
-    # on windows.
-    HOSTLD="$WINLD"
 
     AC_CHECK_PROG([MT], [mt], [mt],,, [/usr/bin/mt])
-    WHICHCMD_SPACESAFE([MT])
+    BASIC_FIXUP_EXECUTABLE(MT)
     # The resource compiler
     AC_CHECK_PROG([RC], [rc], [rc],,, [/usr/bin/rc])
-    WHICHCMD_SPACESAFE([RC])
+    BASIC_FIXUP_EXECUTABLE(RC)
 
-    RC_FLAGS="-nologo /l 0x409 /r"
+    # For hotspot, we need these in Windows mixed path,
+    # so rewrite them all. Need added .exe suffix.
+    HOTSPOT_CXX="$CXX.exe"
+    HOTSPOT_LD="$LD.exe"
+    HOTSPOT_MT="$MT.exe"
+    HOTSPOT_RC="$RC.exe"
+    BASIC_WINDOWS_REWRITE_AS_WINDOWS_MIXED_PATH(HOTSPOT_CXX)
+    BASIC_WINDOWS_REWRITE_AS_WINDOWS_MIXED_PATH(HOTSPOT_LD)
+    BASIC_WINDOWS_REWRITE_AS_WINDOWS_MIXED_PATH(HOTSPOT_MT)
+    BASIC_WINDOWS_REWRITE_AS_WINDOWS_MIXED_PATH(HOTSPOT_RC)
+    AC_SUBST(HOTSPOT_MT)
+    AC_SUBST(HOTSPOT_RC)
+
+    RC_FLAGS="-nologo -l 0x409 -r"
     AS_IF([test "x$VARIANT" = xOPT], [
         RC_FLAGS="$RC_FLAGS -d NDEBUG"
     ])
@@ -354,12 +371,12 @@ AS_IF([test "x$OPENJDK_BUILD_OS" = xwindows], [
 
     # lib.exe is used to create static libraries.
     AC_CHECK_PROG([WINAR], [lib],[lib],,,)
-    WHICHCMD_SPACESAFE([WINAR])
+    BASIC_FIXUP_EXECUTABLE(WINAR)
     AR="$WINAR"
     ARFLAGS="-nologo -NODEFAULTLIB:MSVCRT"
 
     AC_CHECK_PROG([DUMPBIN], [dumpbin], [dumpbin],,,)
-    WHICHCMD_SPACESAFE([DUMPBIN])
+    BASIC_FIXUP_EXECUTABLE(DUMPBIN)
 
     COMPILER_TYPE=CL
     CCXXFLAGS="$CCXXFLAGS -nologo"
@@ -368,10 +385,20 @@ AC_SUBST(RC_FLAGS)
 AC_SUBST(COMPILER_TYPE)
 
 AC_PROG_CPP
-WHICHCMD(CPP)
+BASIC_FIXUP_EXECUTABLE(CPP)
 
 AC_PROG_CXXCPP
-WHICHCMD(CXXCPP)
+BASIC_FIXUP_EXECUTABLE(CXXCPP)
+
+if test "x$COMPILE_TYPE" != "xcross"; then
+    # If we are not cross compiling, use the same compilers for
+    # building the build platform executables. The cross-compilation
+    # case needed to be done earlier, but this can only be done after
+    # the native tools have been localized.
+    BUILD_CC="$CC"
+    BUILD_CXX="$CXX"
+    BUILD_LD="$LD"
+fi
 
 # for solaris we really need solaris tools, and not gnu equivalent
 #   these seems to normally reside in /usr/ccs/bin so add that to path before
@@ -384,41 +411,44 @@ if test "x$OPENJDK_BUILD_OS" = xsolaris; then
 fi
 
 # Find the right assembler.
-if test "x$OPENJDK_BUILD_OS" = xsolaris; then
+if test "x$OPENJDK_TARGET_OS" = xsolaris; then
     AC_PATH_PROG(AS, as)
-    WHICHCMD(AS)
-    ASFLAGS=" "
+    BASIC_FIXUP_EXECUTABLE(AS)
 else
     AS="$CC -c"
-    ASFLAGS=" "
 fi
 AC_SUBST(AS)
-AC_SUBST(ASFLAGS)
 
-if test "x$OPENJDK_BUILD_OS" = xsolaris; then
-    AC_PATH_PROG(NM, nm)
-    WHICHCMD(NM)
+if test "x$OPENJDK_TARGET_OS" = xsolaris; then
+    AC_PATH_PROGS(NM, [gnm nm])
+    BASIC_FIXUP_EXECUTABLE(NM)
     AC_PATH_PROG(STRIP, strip)
-    WHICHCMD(STRIP)
+    BASIC_FIXUP_EXECUTABLE(STRIP)
     AC_PATH_PROG(MCS, mcs)
-    WHICHCMD(MCS)
-else
+    BASIC_FIXUP_EXECUTABLE(MCS)
+elif test "x$OPENJDK_TARGET_OS" != xwindows; then
     AC_CHECK_TOOL(NM, nm)
-    WHICHCMD(NM)
+    BASIC_FIXUP_EXECUTABLE(NM)
     AC_CHECK_TOOL(STRIP, strip)
-    WHICHCMD(STRIP)
+    BASIC_FIXUP_EXECUTABLE(STRIP)
 fi
 
-###
-#
-# Check for objcopy
-#
-#   but search for gobjcopy first...
-#   since I on solaris found a broken objcopy...buhh
-#
-AC_PATH_TOOL(OBJCOPY, gobjcopy)
-if test "x$OBJCOPY" = x; then
-   AC_PATH_TOOL(OBJCOPY, objcopy)
+# objcopy is used for moving debug symbols to separate files when
+# full debug symbols are enabled.
+if test "x$OPENJDK_TARGET_OS" = xsolaris || test "x$OPENJDK_TARGET_OS" = xlinux; then
+    AC_CHECK_TOOLS(OBJCOPY, [gobjcopy objcopy])
+    BASIC_FIXUP_EXECUTABLE(OBJCOPY)
+fi
+
+AC_CHECK_TOOLS(OBJDUMP, [gobjdump objdump])
+if test "x$OBJDUMP" != x; then
+  # Only used for compare.sh; we can live without it. BASIC_FIXUP_EXECUTABLE bails if argument is missing.
+  BASIC_FIXUP_EXECUTABLE(OBJDUMP)
+fi
+
+if test "x$OPENJDK_TARGET_OS" = "xmacosx"; then
+   AC_PATH_PROG(LIPO, lipo)
+   BASIC_FIXUP_EXECUTABLE(LIPO)
 fi
 
 # Restore old path without tools dir
@@ -449,18 +479,16 @@ if test "x$GCC" = xyes; then
     SET_SHARED_LIBRARY_MAPFILE='-Xlinker -version-script=[$]1'
     C_FLAG_REORDER=''
     CXX_FLAG_REORDER=''
-    SET_SHARED_LIBRARY_ORIGIN='-Xlinker -z -Xlinker origin -Xlinker -rpath -Xlinker \$$$$ORIGIN/[$]1'
+    SET_SHARED_LIBRARY_ORIGIN='-Xlinker -z -Xlinker origin -Xlinker -rpath -Xlinker \$$$$ORIGIN[$]1'
+    SET_EXECUTABLE_ORIGIN='-Xlinker -rpath -Xlinker \$$$$ORIGIN[$]1'
     LD="$CC"
     LDEXE="$CC"
     LDCXX="$CXX"
     LDEXECXX="$CXX"
     POST_STRIP_CMD="$STRIP -g"
-    if test "x$JDK_VARIANT" = xembedded; then
-        POST_STRIP_CMD="$STRIP --strip-unneeded"
-    fi
 
     # Linking is different on MacOSX
-    if test "x$OPENJDK_BUILD_OS" = xmacosx; then
+    if test "x$OPENJDK_TARGET_OS" = xmacosx; then
         # Might change in the future to clang.
         COMPILER_NAME=gcc
         SHARED_LIBRARY='lib[$]1.dylib'
@@ -470,17 +498,18 @@ if test "x$GCC" = xyes; then
         SET_SHARED_LIBRARY_NAME='-Xlinker -install_name -Xlinker @rpath/[$]1' 
         SET_SHARED_LIBRARY_MAPFILE=''
         SET_SHARED_LIBRARY_ORIGIN='-Xlinker -rpath -Xlinker @loader_path/.'
+        SET_EXECUTABLE_ORIGIN="$SET_SHARED_LIBRARY_ORIGIN"
         POST_STRIP_CMD="$STRIP -S"
     fi
 else
-    if test "x$OPENJDK_BUILD_OS" = xsolaris; then
+    if test "x$OPENJDK_TARGET_OS" = xsolaris; then
         # If it is not gcc, then assume it is the Oracle Solaris Studio Compiler
         COMPILER_NAME=ossc
         PICFLAG="-KPIC"
         LIBRARY_PREFIX=lib
         SHARED_LIBRARY='lib[$]1.so'
         STATIC_LIBRARY='lib[$]1.a'
-        SHARED_LIBRARY_FLAGS="-z defs -xildoff -ztext -G"
+        SHARED_LIBRARY_FLAGS="-G"
         SHARED_LIBRARY_SUFFIX='.so'
         STATIC_LIBRARY_SUFFIX='.a'
         OBJ_SUFFIX='.o'
@@ -489,14 +518,15 @@ else
         SET_SHARED_LIBRARY_MAPFILE='-M[$]1'
 	C_FLAG_REORDER='-xF'
 	CXX_FLAG_REORDER='-xF'
-        SET_SHARED_LIBRARY_ORIGIN='-R \$$$$ORIGIN/[$]1'
+        SET_SHARED_LIBRARY_ORIGIN='-R\$$$$ORIGIN[$]1'
+        SET_EXECUTABLE_ORIGIN="$SET_SHARED_LIBRARY_ORIGIN"
         CFLAGS_JDK="${CFLAGS_JDK} -D__solaris__"
         CXXFLAGS_JDK="${CXXFLAGS_JDK} -D__solaris__"
         CFLAGS_JDKLIB_EXTRA='-xstrconst'
         POST_STRIP_CMD="$STRIP -x"
         POST_MCS_CMD="$MCS -d -a \"JDK $FULL_VERSION\""
     fi
-    if test "x$OPENJDK_BUILD_OS" = xwindows; then
+    if test "x$OPENJDK_TARGET_OS" = xwindows; then
         # If it is not gcc, then assume it is the MS Visual Studio compiler
         COMPILER_NAME=cl
         PICFLAG=""
@@ -511,6 +541,7 @@ else
         SET_SHARED_LIBRARY_NAME=''
         SET_SHARED_LIBRARY_MAPFILE=''
         SET_SHARED_LIBRARY_ORIGIN=''
+        SET_EXECUTABLE_ORIGIN=''
     fi
 fi
 
@@ -527,6 +558,7 @@ AC_SUBST(SET_SHARED_LIBRARY_MAPFILE)
 AC_SUBST(C_FLAG_REORDER)
 AC_SUBST(CXX_FLAG_REORDER)
 AC_SUBST(SET_SHARED_LIBRARY_ORIGIN)
+AC_SUBST(SET_EXECUTABLE_ORIGIN)
 AC_SUBST(POST_STRIP_CMD)
 AC_SUBST(POST_MCS_CMD)
 
@@ -542,6 +574,25 @@ AC_DEFUN_ONCE([TOOLCHAIN_SETUP_COMPILER_FLAGS_FOR_OPTIMIZATION],
 # Setup the opt flags for different compilers
 # and different operating systems.
 #
+
+#
+# NOTE: check for -mstackrealign needs to be below potential addition of -m32
+#
+if test "x$OPENJDK_TARGET_CPU_BITS" = x32 && test "x$OPENJDK_TARGET_OS" = xmacosx; then
+    # On 32-bit MacOSX the OS requires C-entry points to be 16 byte aligned.
+    # While waiting for a better solution, the current workaround is to use -mstackrealign.
+    CFLAGS="$CFLAGS -mstackrealign"
+    AC_MSG_CHECKING([if 32-bit compiler supports -mstackrealign])
+    AC_LINK_IFELSE([AC_LANG_SOURCE([[int main() { return 0; }]])],
+                   [
+		        AC_MSG_RESULT([yes])
+                   ],
+	           [
+		        AC_MSG_RESULT([no])
+	                AC_MSG_ERROR([The selected compiler $CXX does not support -mstackrealign! Try to put another compiler in the path.])
+	           ])
+fi
+
 C_FLAG_DEPS="-MMD -MF"
 CXX_FLAG_DEPS="-MMD -MF"
 
@@ -566,7 +617,7 @@ case $COMPILER_TYPE in
 	    CXXFLAGS_DEBUG_SYMBOLS="-g"
 	    if test "x$OPENJDK_TARGET_CPU_BITS" = "x64" && test "x$DEBUG_LEVEL" = "xfastdebug"; then
 	       CFLAGS_DEBUG_SYMBOLS="-g1"
-	       CXXFLAGS_DEBUG_SYMBOLSG="-g1"
+	       CXXFLAGS_DEBUG_SYMBOLS="-g1"
 	    fi
 	    ;;
 	esac
@@ -578,56 +629,63 @@ case $COMPILER_TYPE in
         #
         # Forte has different names for this with their C++ compiler...
         #
-	C_FLAG_DEPS="-xMMD -xMF"
-	CXX_FLAG_DEPS="-xMMD -xMF"
+        C_FLAG_DEPS="-xMMD -xMF"
+        CXX_FLAG_DEPS="-xMMD -xMF"
 
-# Extra options used with HIGHEST
-#
-# WARNING: Use of OPTIMIZATION_LEVEL=HIGHEST in your Makefile needs to be
-#          done with care, there are some assumptions below that need to
-#          be understood about the use of pointers, and IEEE behavior.
-#
-# Use non-standard floating point mode (not IEEE 754)
-CC_HIGHEST="$CC_HIGHEST -fns"
-# Do some simplification of floating point arithmetic (not IEEE 754)
-CC_HIGHEST="$CC_HIGHEST -fsimple"
-# Use single precision floating point with 'float'
-CC_HIGHEST="$CC_HIGHEST -fsingle"
-# Assume memory references via basic pointer types do not alias
-#   (Source with excessing pointer casting and data access with mixed 
-#    pointer types are not recommended)
-CC_HIGHEST="$CC_HIGHEST -xalias_level=basic"
-# Use intrinsic or inline versions for math/std functions
-#   (If you expect perfect errno behavior, do not use this)
-CC_HIGHEST="$CC_HIGHEST -xbuiltin=%all"
-# Loop data dependency optimizations (need -xO3 or higher)
-CC_HIGHEST="$CC_HIGHEST -xdepend"
-# Pointer parameters to functions do not overlap
-#   (Similar to -xalias_level=basic usage, but less obvious sometimes.
-#    If you pass in multiple pointers to the same data, do not use this)
-CC_HIGHEST="$CC_HIGHEST -xrestrict"
-# Inline some library routines
-#   (If you expect perfect errno behavior, do not use this)
-CC_HIGHEST="$CC_HIGHEST -xlibmil"
-# Use optimized math routines
-#   (If you expect perfect errno behavior, do not use this)
-#  Can cause undefined external on Solaris 8 X86 on __sincos, removing for now
-#CC_HIGHEST="$CC_HIGHEST -xlibmopt"
+        # Extra options used with HIGHEST
+        #
+        # WARNING: Use of OPTIMIZATION_LEVEL=HIGHEST in your Makefile needs to be
+        #          done with care, there are some assumptions below that need to
+        #          be understood about the use of pointers, and IEEE behavior.
+        #
+        # Use non-standard floating point mode (not IEEE 754)
+        CC_HIGHEST="$CC_HIGHEST -fns"
+        # Do some simplification of floating point arithmetic (not IEEE 754)
+        CC_HIGHEST="$CC_HIGHEST -fsimple"
+        # Use single precision floating point with 'float'
+        CC_HIGHEST="$CC_HIGHEST -fsingle"
+        # Assume memory references via basic pointer types do not alias
+        #   (Source with excessing pointer casting and data access with mixed 
+        #    pointer types are not recommended)
+        CC_HIGHEST="$CC_HIGHEST -xalias_level=basic"
+        # Use intrinsic or inline versions for math/std functions
+        #   (If you expect perfect errno behavior, do not use this)
+        CC_HIGHEST="$CC_HIGHEST -xbuiltin=%all"
+        # Loop data dependency optimizations (need -xO3 or higher)
+        CC_HIGHEST="$CC_HIGHEST -xdepend"
+        # Pointer parameters to functions do not overlap
+        #   (Similar to -xalias_level=basic usage, but less obvious sometimes.
+        #    If you pass in multiple pointers to the same data, do not use this)
+        CC_HIGHEST="$CC_HIGHEST -xrestrict"
+        # Inline some library routines
+        #   (If you expect perfect errno behavior, do not use this)
+        CC_HIGHEST="$CC_HIGHEST -xlibmil"
+        # Use optimized math routines
+        #   (If you expect perfect errno behavior, do not use this)
+        #  Can cause undefined external on Solaris 8 X86 on __sincos, removing for now
+        #CC_HIGHEST="$CC_HIGHEST -xlibmopt"
 
-        case $LEGACY_OPENJDK_TARGET_CPU1 in
-          i586)
-            C_O_FLAG_HIGHEST="-xO4 -Wu,-O4~yz $CC_HIGHEST -xchip=pentium"
-            C_O_FLAG_HI="-xO4 -Wu,-O4~yz"
-            C_O_FLAG_NORM="-xO2 -Wu,-O2~yz"
-            C_O_FLAG_NONE=""
-            CXX_O_FLAG_HIGHEST="-xO4 -Qoption ube -O4~yz $CC_HIGHEST -xchip=pentium"
-            CXX_O_FLAG_HI="-xO4 -Qoption ube -O4~yz"
-            CXX_O_FLAG_NORM="-xO2 -Qoption ube -O2~yz"
-            CXX_O_FLAG_NONE=""
+        if test "x$OPENJDK_TARGET_CPU" = xsparc; then
+          CFLAGS_JDK="${CFLAGS_JDK} -xmemalign=4s"
+          CXXFLAGS_JDK="${CXXFLAGS_JDK} -xmemalign=4s"
+        fi
+
+        case $OPENJDK_TARGET_CPU_ARCH in
+          x86)
+            C_O_FLAG_HIGHEST="-xO4 -Wu,-O4~yz $CC_HIGHEST -xregs=no%frameptr"
+            C_O_FLAG_HI="-xO4 -Wu,-O4~yz -xregs=no%frameptr"
+            C_O_FLAG_NORM="-xO2 -Wu,-O2~yz -xregs=no%frameptr"
+            C_O_FLAG_NONE="-xregs=no%frameptr"
+            CXX_O_FLAG_HIGHEST="-xO4 -Qoption ube -O4~yz $CC_HIGHEST -xregs=no%frameptr"
+            CXX_O_FLAG_HI="-xO4 -Qoption ube -O4~yz -xregs=no%frameptr"
+            CXX_O_FLAG_NORM="-xO2 -Qoption ube -O2~yz -xregs=no%frameptr"
+            CXX_O_FLAG_NONE="-xregs=no%frameptr"
+            if test "x$OPENJDK_TARGET_CPU" = xx86; then
+               C_O_FLAG_HIGHEST="$C_O_FLAG_HIGHEST -xchip=pentium"
+               CXX_O_FLAG_HIGHEST="$CXX_O_FLAG_HIGHEST -xchip=pentium"
+            fi
             ;;
           sparc)
-            CFLAGS_JDK="${CFLAGS_JDK} -xmemalign=4s"
-            CXXFLAGS_JDK="${CXXFLAGS_JDK} -xmemalign=4s"
             CFLAGS_JDKLIB_EXTRA="${CFLAGS_JDKLIB_EXTRA} -xregs=no%appl"
             CXXFLAGS_JDKLIB_EXTRA="${CXXFLAGS_JDKLIB_EXTRA} -xregs=no%appl"
             C_O_FLAG_HIGHEST="-xO4 -Wc,-Qrm-s -Wc,-Qiselect-T0 $CC_HIGHEST -xprefetch=auto,explicit -xchip=ultra"
@@ -647,9 +705,11 @@ CC_HIGHEST="$CC_HIGHEST -xlibmil"
     ;;
   CL )
     D_FLAG=
-    C_O_FLAG_HI="-O2"
+    C_O_FLAG_HIGHEST="-O2"
+    C_O_FLAG_HI="-O1"
     C_O_FLAG_NORM="-O1"
     C_O_FLAG_NONE="-Od"
+    CXX_O_FLAG_HIGHEST="$C_O_FLAG_HIGHEST"
     CXX_O_FLAG_HI="$C_O_FLAG_HI"
     CXX_O_FLAG_NORM="$C_O_FLAG_NORM"
     CXX_O_FLAG_NONE="$C_O_FLAG_NONE"
@@ -680,15 +740,15 @@ AC_DEFUN_ONCE([TOOLCHAIN_SETUP_COMPILER_FLAGS_FOR_JDK],
 [
 
 if test "x$CFLAGS" != "x${ADDED_CFLAGS}"; then
-   AC_MSG_WARN([Ignoring CFLAGS($CFLAGS) found in environment. Use --with-extra-cflags"])
+   AC_MSG_WARN([Ignoring CFLAGS($CFLAGS) found in environment. Use --with-extra-cflags])
 fi
 
 if test "x$CXXFLAGS" != "x${ADDED_CXXFLAGS}"; then
-   AC_MSG_WARN([Ignoring CXXFLAGS($CXXFLAGS) found in environment. Use --with-extra-cxxflags"])
+   AC_MSG_WARN([Ignoring CXXFLAGS($CXXFLAGS) found in environment. Use --with-extra-cxxflags])
 fi
 
 if test "x$LDFLAGS" != "x${ADDED_LDFLAGS}"; then
-   AC_MSG_WARN([Ignoring LDFLAGS($LDFLAGS) found in environment. Use --with-extra-ldflags"])
+   AC_MSG_WARN([Ignoring LDFLAGS($LDFLAGS) found in environment. Use --with-extra-ldflags])
 fi
 
 AC_ARG_WITH(extra-cflags, [AS_HELP_STRING([--with-extra-cflags],
@@ -703,6 +763,15 @@ AC_ARG_WITH(extra-ldflags, [AS_HELP_STRING([--with-extra-ldflags],
 CFLAGS_JDK="${CFLAGS_JDK} $with_extra_cflags"
 CXXFLAGS_JDK="${CXXFLAGS_JDK} $with_extra_cxxflags"
 LDFLAGS_JDK="${LDFLAGS_JDK} $with_extra_ldflags"
+
+# Hotspot needs these set in their legacy form
+LEGACY_EXTRA_CFLAGS=$with_extra_cflags
+LEGACY_EXTRA_CXXFLAGS=$with_extra_cxxflags
+LEGACY_EXTRA_LDFLAGS=$with_extra_ldflags
+
+AC_SUBST(LEGACY_EXTRA_CFLAGS)
+AC_SUBST(LEGACY_EXTRA_CXXFLAGS)
+AC_SUBST(LEGACY_EXTRA_LDFLAGS)
 
 ###############################################################################
 #
@@ -729,41 +798,34 @@ case $COMPILER_NAME in
 	  esac
           ;;
       ossc )
-      	  CFLAGS_JDK="$CFLAGS_JDK -xc99=%none -xCC -errshort=tags -Xa -v -mt -norunpath -xnolib"
-      	  CXXFLAGS_JDK="$CXXFLAGS_JDK -errtags=yes +w -mt -features=no%except -DCC_NOEX"
+          CCXXFLAGS_JDK="$CCXXFLAGS $CCXXFLAGS_JDK -DTRACING -DMACRO_MEMSYS_OPS -DBREAKPTS"
+          case $OPENJDK_TARGET_CPU_ARCH in
+          x86 )
+            CCXXFLAGS_JDK="$CCXXFLAGS_JDK -DcpuIntel -Di586 -D$OPENJDK_TARGET_CPU_LEGACY_LIB"
+       	    CFLAGS_JDK="$CFLAGS_JDK -erroff=E_BAD_PRAGMA_PACK_VALUE"
+          ;;
+          esac
+
+      	  CFLAGS_JDK="$CFLAGS_JDK -xc99=%none -xCC -errshort=tags -Xa -v -mt -W0,-noglobal"
+      	  CXXFLAGS_JDK="$CXXFLAGS_JDK -errtags=yes +w -mt -features=no%except -DCC_NOEX -norunpath -xnolib"
+
+          LDFLAGS_JDK="$LDFLAGS_JDK -z defs -xildoff -ztext"
+          LDFLAGS_CXX_JDK="$LDFLAGS_CXX_JDK -norunpath -xnolib"
           ;;
       cl )
           CCXXFLAGS_JDK="$CCXXFLAGS $CCXXFLAGS_JDK -Zi -MD -Zc:wchar_t- -W3 -wd4800 \
                -D_STATIC_CPPLIB -D_DISABLE_DEPRECATE_STATIC_CPPLIB -DWIN32_LEAN_AND_MEAN \
 	       -D_CRT_SECURE_NO_DEPRECATE -D_CRT_NONSTDC_NO_DEPRECATE \
 	       -DWIN32 -DIAL"
-          case $LEGACY_OPENJDK_TARGET_CPU1 in
-              i?86 )
+          case $OPENJDK_TARGET_CPU in
+              x86 )
                   CCXXFLAGS_JDK="$CCXXFLAGS_JDK -D_X86_ -Dx86"
                   ;;
-              amd64 )
+              x86_64 )
                   CCXXFLAGS_JDK="$CCXXFLAGS_JDK -D_AMD64_ -Damd64"
                   ;;
           esac
           ;;
-esac
-
-###############################################################################
-#
-# Cross-compile arch specific flags
-
-#
-if test "x$JDK_VARIANT" = "xembedded"; then
-   CCXXFLAGS_JDK="$CCXXFLAGS_JDK -DJAVASE_EMBEDDED"
-fi
-
-case $OPENJDK_TARGET_CPU_ARCH in
-arm )
-    CCXXFLAGS_JDK="$CCXXFLAGS_JDK -fsigned-char"
-    ;;
-ppc )
-    CCXXFLAGS_JDK="$CCXXFLAGS_JDK -fsigned-char"
-    ;;
 esac
 
 ###############################################################################
@@ -774,11 +836,17 @@ CCXXFLAGS_JDK="$CCXXFLAGS_JDK $ADD_LP64"
 PACKAGE_PATH=/opt/local
 AC_SUBST(PACKAGE_PATH)
 
-# Sometimes we use a cpu dir (.../lib/amd64/server) 
-# Sometimes not (.../lib/server) 
-LIBARCHDIR="$LEGACY_OPENJDK_TARGET_CPU2/"
-if test "x$ENDIAN" = xlittle; then
-    CCXXFLAGS_JDK="$CCXXFLAGS_JDK -D_LITTLE_ENDIAN"
+if test "x$OPENJDK_TARGET_CPU_ENDIAN" = xlittle; then
+    # The macro _LITTLE_ENDIAN needs to be defined the same to avoid the
+    #   Sun C compiler warning message: warning: macro redefined: _LITTLE_ENDIAN
+    #   (The Solaris X86 system defines this in file /usr/include/sys/isa_defs.h).
+    #   Note: -Dmacro         is the same as    #define macro 1
+    #         -Dmacro=	    is the same as    #define macro
+    if test "x$OPENJDK_TARGET_OS" = xsolaris; then
+        CCXXFLAGS_JDK="$CCXXFLAGS_JDK -D_LITTLE_ENDIAN="
+    else
+        CCXXFLAGS_JDK="$CCXXFLAGS_JDK -D_LITTLE_ENDIAN"
+    fi
 else
     CCXXFLAGS_JDK="$CCXXFLAGS_JDK -D_BIG_ENDIAN"
 fi
@@ -793,27 +861,29 @@ if test "x$OPENJDK_TARGET_OS" = xsolaris; then
 fi
 if test "x$OPENJDK_TARGET_OS" = xmacosx; then
     CCXXFLAGS_JDK="$CCXXFLAGS_JDK -DMACOSX -D_ALLBSD_SOURCE"
-    LIBARCHDIR=""
 fi
 if test "x$OPENJDK_TARGET_OS" = xbsd; then
     CCXXFLAGS_JDK="$CCXXFLAGS_JDK -DBSD -D_ALLBSD_SOURCE"
 fi
 if test "x$DEBUG_LEVEL" = xrelease; then
     CCXXFLAGS_JDK="$CCXXFLAGS_JDK -DNDEBUG"
+    if test "x$OPENJDK_TARGET_OS" = xsolaris; then
+        CCXXFLAGS_JDK="$CCXXFLAGS_JDK -DTRIMMED"
+    fi
 else
     CCXXFLAGS_JDK="$CCXXFLAGS_JDK -DDEBUG"
 fi
 
-CCXXFLAGS_JDK="$CCXXFLAGS_JDK -DARCH='\"$LEGACY_OPENJDK_TARGET_CPU1\"' -D$LEGACY_OPENJDK_TARGET_CPU1"
+CCXXFLAGS_JDK="$CCXXFLAGS_JDK -DARCH='\"$OPENJDK_TARGET_CPU_LEGACY\"' -D$OPENJDK_TARGET_CPU_LEGACY"
 CCXXFLAGS_JDK="$CCXXFLAGS_JDK -DRELEASE='\"$RELEASE\"'"
 
 CCXXFLAGS_JDK="$CCXXFLAGS_JDK \
         -I${JDK_OUTPUTDIR}/include \
         -I${JDK_OUTPUTDIR}/include/$OPENJDK_TARGET_OS \
         -I${JDK_TOPDIR}/src/share/javavm/export \
-        -I${JDK_TOPDIR}/src/$LEGACY_OPENJDK_TARGET_OS_API/javavm/export \
+        -I${JDK_TOPDIR}/src/$OPENJDK_TARGET_OS_API_DIR/javavm/export \
         -I${JDK_TOPDIR}/src/share/native/common \
-        -I${JDK_TOPDIR}/src/$LEGACY_OPENJDK_TARGET_OS_API/native/common"
+        -I${JDK_TOPDIR}/src/$OPENJDK_TARGET_OS_API_DIR/native/common"
 
 # The shared libraries are compiled using the picflag.
 CFLAGS_JDKLIB="$CCXXFLAGS_JDK $CFLAGS_JDK $PICFLAG $CFLAGS_JDKLIB_EXTRA"
@@ -831,9 +901,9 @@ CXXFLAGS_JDKEXE="$CCXXFLAGS_JDK $CXXFLAGS_JDK"
 # libraries will link to whatever is in memory. Yuck. 
 #
 # Thus we offer the compiler to find libjvm.so first in server then in client. It works. Ugh.
-if test "x$COMPILER_TYPE" = xCL; then
+if test "x$COMPILER_NAME" = xcl; then
     LDFLAGS_JDK="$LDFLAGS_JDK -nologo -opt:ref -incremental:no"
-    if test "x$LEGACY_OPENJDK_TARGET_CPU1" = xi586; then 
+    if test "x$OPENJDK_TARGET_CPU" = xx86; then 
         LDFLAGS_JDK="$LDFLAGS_JDK -safeseh"
     fi
     # TODO: make -debug optional "--disable-full-debug-symbols"
@@ -847,34 +917,36 @@ if test "x$COMPILER_TYPE" = xCL; then
     fi
     LDFLAGS_JDKEXE="${LDFLAGS_JDK} /STACK:$LDFLAGS_STACK_SIZE"
 else
-    # If this is a --hash-style=gnu system, use --hash-style=both, why?
-    HAS_GNU_HASH=`$CC -dumpspecs 2>/dev/null | $GREP 'hash-style=gnu'`
-    if test -n "$HAS_GNU_HASH"; then
-        # And since we now know that the linker is gnu, then add -z defs, to forbid
-        # undefined symbols in object files.
-        LDFLAGS_JDK="${LDFLAGS_JDK} -Xlinker --hash-style=both -Xlinker -z -Xlinker defs"
-        if test "x$DEBUG_LEVEL" == "xrelease"; then
-            # When building release libraries, tell the linker optimize them.
-            # Should this be supplied to the OSS linker as well?
-            LDFLAGS_JDK="${LDFLAGS_JDK} -Xlinker -O1"
+    if test "x$COMPILER_NAME" = xgcc; then
+        # If this is a --hash-style=gnu system, use --hash-style=both, why?
+        HAS_GNU_HASH=`$CC -dumpspecs 2>/dev/null | $GREP 'hash-style=gnu'`
+        if test -n "$HAS_GNU_HASH"; then
+            LDFLAGS_JDK="${LDFLAGS_JDK} -Xlinker --hash-style=both "
+        fi
+        if test "x$OPENJDK_TARGET_OS" = xlinux; then 
+          # And since we now know that the linker is gnu, then add -z defs, to forbid
+          # undefined symbols in object files.
+          LDFLAGS_JDK="${LDFLAGS_JDK} -Xlinker -z -Xlinker defs"
+          if test "x$DEBUG_LEVEL" = "xrelease"; then
+              # When building release libraries, tell the linker optimize them.
+              # Should this be supplied to the OSS linker as well?
+              LDFLAGS_JDK="${LDFLAGS_JDK} -Xlinker -O1"
+          fi
         fi
     fi
-
     LDFLAGS_JDKLIB="${LDFLAGS_JDK} $SHARED_LIBRARY_FLAGS \
-                    -L${JDK_OUTPUTDIR}/lib/${LIBARCHDIR}server \
-                    -L${JDK_OUTPUTDIR}/lib/${LIBARCHDIR}client \
-  	            -L${JDK_OUTPUTDIR}/lib/${LIBARCHDIR}"
-    LDFLAGS_JDKLIB_SUFFIX="-ljvm -ljava"
+                    -L${JDK_OUTPUTDIR}/lib${OPENJDK_TARGET_CPU_LIBDIR}/server \
+                    -L${JDK_OUTPUTDIR}/lib${OPENJDK_TARGET_CPU_LIBDIR}/client \
+                    -L${JDK_OUTPUTDIR}/lib${OPENJDK_TARGET_CPU_LIBDIR}"
+
+    LDFLAGS_JDKLIB_SUFFIX="-ljava -ljvm"
     if test "x$COMPILER_NAME" = xossc; then
         LDFLAGS_JDKLIB_SUFFIX="$LDFLAGS_JDKLIB_SUFFIX -lc"
     fi
 
-    # Only the jli library is explicitly linked when the launchers are built.
-    # The libjvm is then dynamically loaded/linked by the launcher.
     LDFLAGS_JDKEXE="${LDFLAGS_JDK}"
-    if test "x$OPENJDK_TARGET_OS" != "xmacosx"; then
-       LDFLAGS_JDKEXE="$LDFLAGS_JDKEXE -L${JDK_OUTPUTDIR}/lib/${LIBARCHDIR}jli"
-       LDFLAGS_JDKEXE_SUFFIX="-ljli"
+    if test "x$OPENJDK_TARGET_OS" = xlinux; then
+        LDFLAGS_JDKEXE="$LDFLAGS_JDKEXE -Xlinker --allow-shlib-undefined"
     fi
 fi
 
@@ -905,4 +977,5 @@ AC_SUBST(LDFLAGS_JDKLIB)
 AC_SUBST(LDFLAGS_JDKEXE)
 AC_SUBST(LDFLAGS_JDKLIB_SUFFIX)
 AC_SUBST(LDFLAGS_JDKEXE_SUFFIX)
+AC_SUBST(LDFLAGS_CXX_JDK)
 ])

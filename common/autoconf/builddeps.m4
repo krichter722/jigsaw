@@ -52,19 +52,19 @@ AC_DEFUN_ONCE([BDEPS_SCAN_FOR_BUILDDEPS],
         fi
         # Create build and target names that use _ instead of "-" and ".".
         # This is necessary to use them in variable names.
-        build_var=`echo ${OPENJDK_BUILD_SYSTEM} | tr '-' '_' | tr '.' '_'`
-        target_var=`echo ${OPENJDK_TARGET_SYSTEM} | tr '-' '_' | tr '.' '_'`
+        build_var=`echo ${OPENJDK_BUILD_AUTOCONF_NAME} | tr '-' '_' | tr '.' '_'`
+        target_var=`echo ${OPENJDK_TARGET_AUTOCONF_NAME} | tr '-' '_' | tr '.' '_'`
         # Extract rewrite information for build and target
         eval rewritten_build=\${REWRITE_${build_var}}
         if test "x$rewritten_build" = x; then
-            rewritten_build=${OPENJDK_BUILD_SYSTEM}
+            rewritten_build=${OPENJDK_BUILD_AUTOCONF_NAME}
             echo Build stays the same $rewritten_build
         else
             echo Rewriting build for builddeps into $rewritten_build
         fi
         eval rewritten_target=\${REWRITE_${target_var}}
         if test "x$rewritten_target" = x; then
-            rewritten_target=${OPENJDK_TARGET_SYSTEM}
+            rewritten_target=${OPENJDK_TARGET_AUTOCONF_NAME}
             echo Target stays the same $rewritten_target
         else
             echo Rewriting target for builddeps into $rewritten_target
@@ -235,26 +235,13 @@ AC_ARG_WITH(builddeps-conf, [AS_HELP_STRING([--with-builddeps-conf],
     [use this configuration file for the builddeps])])
 
 AC_ARG_WITH(builddeps-server, [AS_HELP_STRING([--with-builddeps-server],
-    [download and use build dependencies from this server url, e.g. --with-builddeps-server=ftp://example.com/dir])])
+    [download and use build dependencies from this server url])])
 
 AC_ARG_WITH(builddeps-dir, [AS_HELP_STRING([--with-builddeps-dir],
-    [store downloaded build dependencies here @<:@d/localhome/builddeps@:>@])],
+    [store downloaded build dependencies here @<:@/localhome/builddeps@:>@])],
     [],
     [with_builddeps_dir=/localhome/builddeps])
 
 AC_ARG_WITH(builddeps-group, [AS_HELP_STRING([--with-builddeps-group],
     [chgrp the downloaded build dependencies to this group])])
-
-AC_ARG_ENABLE([list-builddeps], [AS_HELP_STRING([--enable-list-builddeps],
-	[list all build dependencies known to the configure script])],
-	[LIST_BUILDDEPS="${enableval}"], [LIST_BUILDDEPS='no'])
-
-if test "x$LIST_BUILDDEPS" = xyes; then
-    echo
-    echo List of build dependencies known to the configure script,
-    echo that can be used in builddeps.conf files:
-    cat $AUTOCONF_DIR/*.ac $AUTOCONF_DIR/*.m4 | grep BDEPS_CHECK_MODUL[E]\( | cut -f 2 -d ',' | tr -d ' ' | sort
-    echo
-    exit 1
-fi
 ])

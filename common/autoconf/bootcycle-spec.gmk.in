@@ -1,11 +1,12 @@
-#!/bin/bash
 #
-# Copyright (c) 2012, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2011, 2012, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # This code is free software; you can redistribute it and/or modify it
 # under the terms of the GNU General Public License version 2 only, as
-# published by the Free Software Foundation.
+# published by the Free Software Foundation.  Oracle designates this
+# particular file as subject to the "Classpath" exception as provided
+# by Oracle in the LICENSE file that accompanied this code.
 #
 # This code is distributed in the hope that it will be useful, but WITHOUT
 # ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
@@ -22,20 +23,21 @@
 # questions.
 #
 
-if [ -x /usr/bin/ggrep ] ; then
-    # Gnu grep on Solaris
-    # (reference configure and build/solaris-i586-clientANDserver-release/spec.gmk
-    GREP=/usr/bin/ggrep
-else
-    GREP=grep
-fi
-#
-EXP="Note: Some input files use or override a deprecated API."
-EXP="${EXP}|Note: Recompile with -Xlint:deprecation for details."
-EXP="${EXP}|Note: Some input files use unchecked or unsafe operations."
-EXP="${EXP}|Note: Recompile with -Xlint:unchecked for details."
-EXP="${EXP}| warning"
-EXP="${EXP}|uses or overrides a deprecated API."
-EXP="${EXP}|uses unchecked or unsafe operations."
-#
-${GREP} --line-buffered -v -E "${EXP}"
+# Support for building boot cycle builds
+
+# First include the real base spec.gmk file
+include @SPEC@
+
+# Check that the user did not try to specify a different java to use for compiling.
+ifneq ($(firstword $(SJAVAC_SERVER_JAVA)),$(firstword $(JAVA)))
+  $(error Bootcycle builds are not possible if --with-sjavac-server-java is specified)
+endif
+
+# Override specific values to do a boot cycle build
+
+# The bootcycle build has a different output directory
+BUILD_OUTPUT:=@BUILD_OUTPUT@/bootcycle-build
+
+# Use a different Boot JDK
+BOOT_JDK:=@BUILD_OUTPUT@/images/j2sdk-image
+BOOT_RTJAR:=@BUILD_OUTPUT@/images/j2sdk-image/jre/lib/rt.jar
