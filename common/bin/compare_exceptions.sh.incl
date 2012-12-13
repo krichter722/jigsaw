@@ -282,7 +282,23 @@ ACCEPTED_SMALL_SIZE_DIFF="
 ./jre/lib/i386/libunpack.so
 ./jre/lib/i386/libverify.so
 ./jre/lib/i386/libzip.so
+./jre/lib/i386/libdeploy.so
+./jre/lib/i386/libjavaplugin.so
+./jre/lib/i386/libjavaplugin_jni.so
+./jre/lib/i386/libjavaplugin_nscp.so
+./jre/lib/i386/libjavaplugin_oji.so
+./jre/lib/i386/libnpjp2.so
+./jre/plugin/i386/ns4/libjavaplugin.so
+./jre/plugin/i386/ns7/libjavaplugin_oji.so
 ./jre/lib/i386/server/libjvm.so
+./jre/lib/i386/client/64/libjvm_db.so
+./jre/lib/i386/client/64/libjvm_dtrace.so
+./jre/lib/i386/client/libjvm_db.so
+./jre/lib/i386/client/libjvm_dtrace.so
+./jre/lib/i386/server/64/libjvm_db.so
+./jre/lib/i386/server/64/libjvm_dtrace.so
+./jre/lib/i386/server/libjvm_db.so
+./jre/lib/i386/server/libjvm_dtrace.so
 ./bin/appletviewer
 ./bin/extcheck
 ./bin/idlj
@@ -293,6 +309,7 @@ ACCEPTED_SMALL_SIZE_DIFF="
 ./bin/javadoc
 ./bin/javah
 ./bin/javap
+./bin/javaws
 ./bin/jcmd
 ./bin/jconsole
 ./bin/jdb
@@ -322,6 +339,8 @@ ACCEPTED_SMALL_SIZE_DIFF="
 ./bin/wsimport
 ./bin/xjc
 ./jre/bin/java
+./jre/bin/java_vm
+./jre/bin/javaws
 ./jre/bin/keytool
 ./jre/bin/orbd
 ./jre/bin/pack200
@@ -337,7 +356,9 @@ ACCEPTED_SMALL_SIZE_DIFF="
 SKIP_FULLDUMP_DIFF="true"
 
 # Filter random C++ symbol strings.
-DIS_DIFF_FILTER="$SED -e s/\.[a-zA-Z0-9_\$]\{15,15\}/<SYM>/g"
+# Some numbers differ randomly.
+# Can't use space in these expressions as the shell will mess with them.
+DIS_DIFF_FILTER="$SED -e s/\.[a-zA-Z0-9_\$]\{15,15\}/<SYM>/g -e s/\([0-9a-f][0-9a-f].\)\{2,8\}[0-9a-f][0-9a-f]/<NUMS>/g -e s/\(0x\)[0-9a-f]*\([,(>]\)/\1<HEX>\2/g -e s/\(0x\)[0-9a-f]*$/\1<HEX>/g -e s/\(\#.\)[0-9a-f]*\(.<\)/\1<HEX>\2/g -e s/[\.A-Za-z0-9%]\{16,16\}$/<BIN>/g"
 
 fi
 
@@ -415,6 +436,9 @@ ACCEPTED_SMALL_SIZE_DIFF="
 ./jre/lib/amd64/libzip.so
 ./jre/lib/amd64/server/64/libjvm_db.so
 ./jre/lib/amd64/server/64/libjvm_dtrace.so
+./jre/lib/amd64/server/libjvm.so
+./jre/lib/amd64/server/libjvm_db.so
+./jre/lib/amd64/server/libjvm_dtrace.so
 ./bin/amd64/appletviewer
 ./bin/amd64/extcheck
 ./bin/amd64/idlj
@@ -469,7 +493,9 @@ ACCEPTED_SMALL_SIZE_DIFF="
 SKIP_FULLDUMP_DIFF="true"
 
 # Filter random C++ symbol strings.
-DIS_DIFF_FILTER="$SED -e s/\.[a-zA-Z0-9_\$]\{15,15\}/<SYM>/g"
+# Some numbers differ randomly.
+# Can't use space in these expressions as the shell will mess with them.
+DIS_DIFF_FILTER="$SED -e s/\.[a-zA-Z0-9_\$]\{15,15\}/<SYM>/g -e s/\([0-9a-f][0-9a-f].\)\{2,8\}[0-9a-f][0-9a-f]/<NUMS>/g -e s/\(0x\)[0-9a-f]*\([,(>]\)/\1<HEX>\2/g -e s/\(0x\)[0-9a-f]*$/\1<HEX>/g -e s/\(\#.\)[0-9a-f]*\(.<\)/\1<HEX>\2/g -e s/[\.A-Za-z0-9%]\{16,16\}$/<BIN>/g"
 
 fi
 
@@ -561,6 +587,14 @@ ACCEPTED_SMALL_SIZE_DIFF="
 ./jre/lib/sparc/libunpack.so
 ./jre/lib/sparc/libverify.so
 ./jre/lib/sparc/libzip.so
+./jre/lib/sparc/libdeploy.so
+./jre/lib/sparc/libjavaplugin.so
+./jre/lib/sparc/libjavaplugin_jni.so
+./jre/lib/sparc/libjavaplugin_nscp.so
+./jre/lib/sparc/libjavaplugin_oji.so
+./jre/lib/sparc/libnpjp2.so
+./jre/plugin/sparc/ns4/libjavaplugin.so
+./jre/plugin/sparc/ns7/libjavaplugin_oji.so
 ./jre/lib/sparc/server/libjvm.so
 ./bin/appletviewer
 ./bin/extcheck
@@ -572,6 +606,7 @@ ACCEPTED_SMALL_SIZE_DIFF="
 ./bin/javadoc
 ./bin/javah
 ./bin/javap
+./bin/javaws
 ./bin/jcmd
 ./bin/jconsole
 ./bin/jdb
@@ -601,6 +636,8 @@ ACCEPTED_SMALL_SIZE_DIFF="
 ./bin/wsimport
 ./bin/xjc
 ./jre/bin/java
+./jre/bin/java_vm
+./jre/bin/javaws
 ./jre/bin/keytool
 ./jre/bin/orbd
 ./jre/bin/pack200
@@ -859,6 +896,7 @@ ACCEPTED_JARZIP_CONTENTS="
 
 KNOWN_BIN_DIFF="
 ./jre/lib/libJObjC.dylib
+./lib/libJObjC.dylib
 "
 
 ACCEPTED_BIN_DIFF="
@@ -910,26 +948,34 @@ ACCEPTED_BIN_DIFF="
 ./jre/bin/tnameserv
 ./jre/lib/libsaproc.dylib
 ./jre/lib/server/libjvm.dylib
+./lib/libsaproc.dylib
+./lib/server/libjvm.dylib
+./lib/deploy/JavaControlPanel.prefPane/Contents/MacOS/JavaControlPanel
 "
 
 KNOWN_SIZE_DIFF="
 ./jre/lib/libJObjC.dylib
+./lib/libJObjC.dylib
 "
 
 SORT_SYMBOLS="
 ./jre/lib/libJObjC.dylib
+./lib/libJObjC.dylib
 "
 
 KNOWN_SYM_DIFF="
 ./jre/lib/libJObjC.dylib
+./lib/libJObjC.dylib
 "
 
 KNOWN_ELF_DIFF="
 ./jre/lib/libJObjC.dylib
+./lib/libJObjC.dylib
 "
 
 KNOWN_DIS_DIFF="
 ./jre/lib/libJObjC.dylib
+./lib/libJObjC.dylib
 "
 
 fi

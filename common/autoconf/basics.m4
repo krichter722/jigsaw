@@ -345,7 +345,13 @@ AC_ARG_WITH(conf-name, [AS_HELP_STRING([--with-conf-name],
         [ CONF_NAME=${with_conf_name} ])
 
 # Test from where we are running configure, in or outside of src root.
-if test "x$CURDIR" = "x$SRC_ROOT" || test "x$CURDIR" = "x$SRC_ROOT/common" || test "x$CURDIR" = "x$SRC_ROOT/common/autoconf" || test "x$CURDIR" = "x$SRC_ROOT/common/makefiles" ; then
+# To enable comparison of directories, CURDIR needs to be symlink free
+# just like SRC_ROOT already is
+NOSYM_CURDIR="$CURDIR"
+BASIC_REMOVE_SYMBOLIC_LINKS(NOSYM_CURDIR)
+if test "x$NOSYM_CURDIR" = "x$SRC_ROOT" || test "x$NOSYM_CURDIR" = "x$SRC_ROOT/common" \
+        || test "x$NOSYM_CURDIR" = "x$SRC_ROOT/common/autoconf" \
+        || test "x$NOSYM_CURDIR" = "x$SRC_ROOT/common/makefiles" ; then
     # We are running configure from the src root.
     # Create a default ./build/target-variant-debuglevel output root.
     if test "x${CONF_NAME}" = x; then
@@ -373,7 +379,11 @@ else
       # If we have a spec.gmk, we have run here before and we are OK. Otherwise, check for
       # other files
       files_present=`$LS $OUTPUT_ROOT`
-      if test "x$files_present" != x; then
+      # Configure has already touched config.log and confdefs.h in the current dir when this check 
+      # is performed.
+      filtered_files=`$ECHO "$files_present" | $SED -e 's/config.log//g' -e 's/confdefs.h//g' -e 's/ //g' \
+                                             | $TR -d '\n'`
+      if test "x$filtered_files" != x; then
         AC_MSG_NOTICE([Current directory is $CURDIR.])
         AC_MSG_NOTICE([Since this is not the source root, configure will output the configuration here])
         AC_MSG_NOTICE([(as opposed to creating a configuration in <src_root>/build/<conf-name>).])
