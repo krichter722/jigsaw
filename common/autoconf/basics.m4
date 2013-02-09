@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2011, 2012, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2011, 2013, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # This code is free software; you can redistribute it and/or modify it
@@ -90,13 +90,25 @@ AC_DEFUN([BASIC_FIXUP_EXECUTABLE],
     tmp="$complete EOL"
     arguments="${tmp#* }"
 
-    new_path=`$WHICH $path 2> /dev/null`
+    # Cannot rely on the command "which" here since it doesn't always work.
+    is_absolute_path=`$ECHO "$path" | $GREP ^/`
+    if test -z "$is_absolute_path"; then
+      # Path to executable is not absolute. Find it.
+      IFS_save="$IFS"
+      IFS=:
+      for p in $PATH; do
+        if test -f "$p/$path" && test -x "$p/$path"; then
+          new_path="$p/$path"
+          break
+        fi
+      done
+      IFS="$IFS_save"
+    else
+      AC_MSG_NOTICE([Resolving $1 (as $path) failed, using $path directly.])
+      new_path="$path"
+    fi
+    
     if test "x$new_path" = x; then
-      is_absolute_path=`$ECHO "$path" | $GREP ^/`
-      if test "x$is_absolute_path" != x; then
-        AC_MSG_NOTICE([Resolving $1 (as $path) with 'which' failed, using $path directly.])
-        new_path="$path"
-      else
         AC_MSG_NOTICE([The path of $1, which resolves as "$complete", is not found.])
         has_space=`$ECHO "$complete" | $GREP " "`
         if test "x$has_space" != x; then
@@ -104,20 +116,19 @@ AC_DEFUN([BASIC_FIXUP_EXECUTABLE],
         fi
         AC_MSG_ERROR([Cannot locate the the path of $1])
       fi
-    fi
   fi
 
-  # Now join together the path and the arguments once again
-  if test "x$arguments" != xEOL; then
-      new_complete="$new_path ${arguments% *}"
-  else
-      new_complete="$new_path"
-  fi
+      # Now join together the path and the arguments once again
+      if test "x$arguments" != xEOL; then
+        new_complete="$new_path ${arguments% *}"
+      else
+        new_complete="$new_path"
+      fi
 
   if test "x$complete" != "x$new_complete"; then
-    $1="$new_complete"
-    AC_MSG_NOTICE([Rewriting $1 to "$new_complete"])
-  fi
+      $1="$new_complete"
+      AC_MSG_NOTICE([Rewriting $1 to "$new_complete"])
+    fi
 ])
 
 AC_DEFUN([BASIC_REMOVE_SYMBOLIC_LINKS],
@@ -223,7 +234,9 @@ BASIC_REQUIRE_PROG(BASH, bash)
 BASIC_REQUIRE_PROG(CAT, cat)
 BASIC_REQUIRE_PROG(CHMOD, chmod)
 BASIC_REQUIRE_PROG(CMP, cmp)
+BASIC_REQUIRE_PROG(COMM, comm)
 BASIC_REQUIRE_PROG(CP, cp)
+BASIC_REQUIRE_PROG(CPIO, cpio)
 BASIC_REQUIRE_PROG(CUT, cut)
 BASIC_REQUIRE_PROG(DATE, date)
 BASIC_REQUIRE_PROG(DIFF, [gdiff diff])
@@ -622,6 +635,18 @@ AC_DEFUN([BASIC_CHECK_DIR_ON_LOCAL_DISK],
   fi
 ])
 
+# Check that source files have basic read permissions set. This might
+# not be the case in cygwin in certain conditions.
+AC_DEFUN_ONCE([BASIC_CHECK_SRC_PERMS],
+[
+  if test x"$OPENJDK_BUILD_OS" = xwindows; then
+    file_to_test="$SRC_ROOT/LICENSE"
+    if test `$STAT -c '%a' "$file_to_test"` -lt 400; then
+      AC_MSG_ERROR([Bad file permissions on src files. This is usually caused by cloning the repositories with a non cygwin hg in a directory not created in cygwin.])
+    fi
+  fi
+])
+
 AC_DEFUN_ONCE([BASIC_TEST_USABILITY_ISSUES],
 [
 
@@ -630,6 +655,8 @@ BASIC_CHECK_DIR_ON_LOCAL_DISK($OUTPUT_ROOT,
   [OUTPUT_DIR_IS_LOCAL="yes"],
   [OUTPUT_DIR_IS_LOCAL="no"])
 AC_MSG_RESULT($OUTPUT_DIR_IS_LOCAL)
+
+BASIC_CHECK_SRC_PERMS
 
 # Check if the user has any old-style ALT_ variables set.
 FOUND_ALT_VARIABLES=`env | grep ^ALT_`
