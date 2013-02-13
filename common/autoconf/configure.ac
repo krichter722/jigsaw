@@ -50,6 +50,7 @@ m4_include([platform.m4])
 m4_include([source-dirs.m4])
 m4_include([toolchain.m4])
 m4_include([toolchain_windows.m4])
+m4_include([bdb.m4])
 
 AC_DEFUN_ONCE([CUSTOM_EARLY_HOOK])
 AC_DEFUN_ONCE([CUSTOM_LATE_HOOK])
@@ -213,6 +214,9 @@ BPERF_SETUP_PRECOMPILED_HEADERS
 
 # Setup use of ccache, if available
 BPERF_SETUP_CCACHE
+
+# Call bdb configure
+BDB_CALL_CONFIGURE
 
 ###############################################################################
 #

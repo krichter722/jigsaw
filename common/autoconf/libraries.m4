@@ -560,6 +560,60 @@ fi
 AC_SUBST(USE_EXTERNAL_LIBZ)
 
 ###############################################################################
+#
+# Check for libdb
+#
+AC_ARG_WITH(libdb, [AS_HELP_STRING([--with-libdb],
+	[use berkley db from build system or OpenJDK source (system, bundled) @<:@bundled@:>@])])
+
+AC_CHECK_LIB(db, db_version,
+             [ LIBDB_FOUND=yes
+                 bdb_lib_part=db ],
+             [ LIBDB_FOUND=no ])
+if test "x${LIBDB_FOUND}" = "xno"; then
+  AC_CHECK_LIB(db-4.5, db_version,
+               [ LIBDB_FOUND=yes
+                 bdb_lib_part=db-4.5 ],
+               [ LIBDB_FOUND=no ])
+fi
+if test "x${LIBDB_FOUND}" = "xno"; then
+  AC_CHECK_LIB(db-4.6, db_version,
+               [ LIBDB_FOUND=yes
+                 bdb_lib_part=db-4.6 ],
+               [ LIBDB_FOUND=no ])
+fi
+
+AC_CHECK_HEADERS([db.h], [DB_HEADER_FOUND=yes])
+
+AC_MSG_CHECKING([for which libdb to use])
+
+DEFAULT_LIBDB=bundled
+#
+# If user didn't specify, use DEFAULT_LIBDB
+#
+if test "x${with_libdb}" = "x"; then
+    with_libdb=${DEFAULT_LIBDB}
+fi
+
+if test "x${with_libdb}" = "xbundled"; then
+    USE_EXTERNAL_LIBDB=false
+    AC_MSG_RESULT([bundled])
+elif test "x${with_libdb}" = "xsystem"; then
+    if test "x${LIBDB_FOUND}" = "xyes" && test "x${DB_HEADER_FOUND}" = "xyes"; then
+        USE_EXTERNAL_LIBDB=true
+        AC_MSG_RESULT([system (${bdb_lib_part})])
+        BDB_LIBRARY_NAME="${LIBRARY_PREFIX}${bdb_lib_part}${SHARED_LIBRARY_SUFFIX}"
+    else
+        AC_MSG_RESULT([system not found])
+        AC_MSG_ERROR([--with-libdb=system specified, but no libdb found!])  
+    fi
+else
+    AC_MSG_ERROR([Invalid value for --with-libdb: ${with_libdb}, use 'system' or 'bundled'])  
+fi
+
+AC_SUBST(USE_EXTERNAL_LIBDB)
+
+###############################################################################
 LIBZIP_CAN_USE_MMAP=true
 
 AC_SUBST(LIBZIP_CAN_USE_MMAP)

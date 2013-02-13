@@ -538,9 +538,14 @@ compare_bin_file() {
     OTHER_DIR=$2
     WORK_DIR=$3
     BIN_FILE=$4
+    OTHER_BIN_FILE=$5
 
     THIS_FILE=$THIS_DIR/$BIN_FILE
+    if [ -n "$OTHER_BIN_FILE" ]; then
+        OTHER_FILE=$OTHER_DIR/$OTHER_BIN_FILE
+    else
     OTHER_FILE=$OTHER_DIR/$BIN_FILE
+    fi
     NAME=$(basename $BIN_FILE)
     WORK_FILE_BASE=$WORK_DIR/$BIN_FILE
     FILE_WORK_DIR=$(dirname $WORK_FILE_BASE)
@@ -1039,6 +1044,13 @@ while [ -n "$1" ]; do
             shift
             shift
             ;;
+        -2bins)
+            CMP_2_BINS=true
+            THIS_FILE=$2
+            OTHER_FILE=$3
+            shift
+            shift
+            ;;
         *)
             CMP_NAMES=false
             CMP_PERMS=false
@@ -1066,6 +1078,18 @@ if [ "$CMP_2_ZIPS" = "true" ]; then
     OTHER_FILE_NAME="$(basename $OTHER_FILE)"
     echo Comparing $THIS_DIR/$THIS_FILE_NAME and $OTHER_DIR/$OTHER_FILE_NAME
     compare_zip_file $THIS_DIR $OTHER_DIR $COMPARE_ROOT/2zips $THIS_FILE_NAME $OTHER_FILE_NAME
+    exit
+fi
+
+if [ "$CMP_2_BINS" = "true" ]; then
+    THIS_DIR="$(dirname $THIS_FILE)"
+    THIS_DIR="$(cd "$THIS_DIR" && pwd )"
+    OTHER_DIR="$(dirname $OTHER_FILE)"
+    OTHER_DIR="$(cd "$OTHER_DIR" && pwd )"
+    THIS_FILE_NAME="$(basename $THIS_FILE)"
+    OTHER_FILE_NAME="$(basename $OTHER_FILE)"
+    echo Comparing $THIS_DIR/$THIS_FILE_NAME and $OTHER_DIR/$OTHER_FILE_NAME
+    compare_bin_file $THIS_DIR $OTHER_DIR $COMPARE_ROOT/2bins $THIS_FILE_NAME $OTHER_FILE_NAME
     exit
 fi
 

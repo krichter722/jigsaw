@@ -110,7 +110,15 @@ hotspot-only: start-make
 	@$(call TargetExit)
 endif
 
-jdk: langtools hotspot corba jaxp jaxws jdk-only
+ifeq ($(USE_EXTERNAL_LIBDB),false)
+bdb: bdb-only
+bdb-only: start-make
+	@$(call TargetEnter)
+	@($(CD) $(SRC_ROOT)/common/makefiles && $(BUILD_LOG_WRAPPER) $(MAKE) $(MAKE_ARGS) -f BdbWrapper.gmk)
+	@$(call TargetExit)
+endif
+
+jdk: langtools hotspot corba jaxp jaxws bdb jdk-only
 jdk-only: start-make
 	@$(call TargetEnter)
 	@($(CD) $(JDK_TOPDIR)/makefiles && $(BUILD_LOG_WRAPPER) $(MAKE) $(MAKE_ARGS) -f BuildJdk.gmk $(JDK_TARGET))
@@ -201,6 +209,9 @@ clean-jaxws:
 	$(call CleanComponent,jaxws)
 clean-hotspot:
 	$(call CleanComponent,hotspot)
+# Can't just delete the directory since that would also remove the configure output for bdb.
+clean-bdb:
+	@($(CD) $(SRC_ROOT)/common/makefiles && $(BUILD_LOG_WRAPPER) $(MAKE) $(MAKE_ARGS) -f BdbWrapper.gmk clean)
 clean-jdk:
 	$(call CleanComponent,jdk)
 clean-images:
@@ -213,9 +224,9 @@ clean-docs:
 	$(call CleanComponent,docs)
 	$(call CleanComponent,docstemp)
 
-.PHONY: langtools corba jaxp jaxws hotspot jdk images overlay-images install
-.PHONY: langtools-only corba-only jaxp-only jaxws-only hotspot-only jdk-only images-only overlay-images-only install-only
+.PHONY: langtools corba jaxp jaxws hotspot bdb jdk images overlay-images install
+.PHONY: langtools-only corba-only jaxp-only jaxws-only hotspot-only bdb-only jdk-only images-only overlay-images-only install-only
 .PHONY: all test clean dist-clean bootcycle-images start-make
-.PHONY: clean-langtools clean-corba clean-jaxp clean-jaxws clean-hotspot clean-jdk clean-images clean-overlay-images clean-bootcycle-build
+.PHONY: clean-langtools clean-corba clean-jaxp clean-jaxws clean-hotspot clean-bdb clean-jdk clean-images clean-overlay-images clean-bootcycle-build
 
 FRC: # Force target

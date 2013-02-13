@@ -33,12 +33,14 @@ CORBA_TOPDIR="$SRC_ROOT/corba"
 JAXP_TOPDIR="$SRC_ROOT/jaxp"
 JAXWS_TOPDIR="$SRC_ROOT/jaxws"
 HOTSPOT_TOPDIR="$SRC_ROOT/hotspot"
+BDB_TOPDIR="$SRC_ROOT/bdb"
 JDK_TOPDIR="$SRC_ROOT/jdk"
 AC_SUBST(LANGTOOLS_TOPDIR)
 AC_SUBST(CORBA_TOPDIR)
 AC_SUBST(JAXP_TOPDIR)
 AC_SUBST(JAXWS_TOPDIR)
 AC_SUBST(HOTSPOT_TOPDIR)
+AC_SUBST(BDB_TOPDIR)
 AC_SUBST(JDK_TOPDIR)
 ])
 
@@ -99,6 +101,10 @@ if test "x$with_add_source_root" != x; then
        test -f $with_add_source_root/hotspot/make/Makefile; then
         AC_MSG_ERROR([Your add source root seems to contain a full hotspot repo! An add source root should only contain additional sources.])
     fi
+    if test -f $with_add_source_root/bdb/makefiles/Makefile || \
+       test -f $with_add_source_root/bdb/make/Makefile; then
+        AC_MSG_ERROR([Your add source root seems to contain a full bdb repo! An add source root should only contain additional sources.])
+    fi
     if test -f $with_add_source_root/jdk/makefiles/Makefile || \
        test -f $with_add_source_root/jdk/make/Makefile; then
         AC_MSG_ERROR([Your add source root seems to contain a full JDK repo! An add source root should only contain additional sources.])
@@ -133,6 +139,10 @@ if test "x$with_override_source_root" != x; then
     if test -f $with_override_source_root/hotspot/makefiles/Makefile || \
        test -f $with_override_source_root/hotspot/make/Makefile; then
         AC_MSG_ERROR([Your override source root seems to contain a full hotspot repo! An override source root should only contain sources that override.])
+    fi
+    if test -f $with_override_source_root/bdb/makefiles/Makefile || \
+       test -f $with_override_source_root/bdb/make/Makefile; then
+        AC_MSG_ERROR([Your override source root seems to contain a full bdb repo! An override source root should only contain sources that override.])
     fi
     if test -f $with_override_source_root/jdk/makefiles/Makefile || \
        test -f $with_override_source_root/jdk/make/Makefile; then
@@ -174,6 +184,9 @@ AC_ARG_WITH(override-jaxws, [AS_HELP_STRING([--with-override-jaxws],
 
 AC_ARG_WITH(override-hotspot, [AS_HELP_STRING([--with-override-hotspot],
 	[use this hotspot dir for the build])])
+
+AC_ARG_WITH(override-bdb, [AS_HELP_STRING([--with-override-bdb],
+	[use this bdb dir for the build])])
 
 AC_ARG_WITH(override-jdk, [AS_HELP_STRING([--with-override-jdk],
 	[use this jdk dir for the build])])
@@ -234,6 +247,18 @@ if test "x$with_override_hotspot" != x; then
     AC_MSG_CHECKING([if hotspot should be overridden])
     AC_MSG_RESULT([yes with $HOTSPOT_TOPDIR])
 fi    
+if test "x$with_override_bdb" != x; then
+    CURDIR="$PWD"
+    cd "$with_override_bdb"
+    BDB_TOPDIR="`pwd`"
+    cd "$CURDIR"
+    if ! test -f $BDB_TOPDIR/make/Makefile && \
+       ! test -f $BDB_TOPDIR/makefiles/Makefile; then
+        AC_MSG_ERROR([You have to override bdb with a full bdb repo!])
+    fi
+    AC_MSG_CHECKING([if bdb should be overridden])
+    AC_MSG_RESULT([yes with $BDB_TOPDIR])
+fi
 if test "x$with_override_jdk" != x; then
     CURDIR="$PWD"
     cd "$with_override_jdk"
@@ -273,4 +298,11 @@ if test "x$with_import_hotspot" != x; then
 fi
 
 JDK_OUTPUTDIR="$OUTPUT_ROOT/jdk"
+
+BDB_OUTPUTDIR="${OUTPUT_ROOT}/bdb"
+BDB_DIST="${BDB_OUTPUTDIR}/dist"
+BDB_BUILDDIR="${BDB_OUTPUTDIR}/out"
+AC_SUBST(BDB_OUTPUTDIR)
+AC_SUBST(BDB_DIST)
+AC_SUBST(BDB_BUILDDIR)
 ])

@@ -373,11 +373,13 @@ define MakeDir
 endef
 
 ifeq ($(OPENJDK_TARGET_OS),solaris)
-# On Solaris, if the target is a symlink and exists, cp won't overwrite.
+# On Solaris, if the target is a symlink and exists, cp won't overwrite. To preserve
+# soft links, -R switch must be used.
 define install-file
 	$(MKDIR) -p $(@D)
 	$(RM) '$@'
 	$(CP) -f -r -P '$<' '$(@D)'
+	if test "$(@F)" != "$(<F)"; then $(MV) '$(@D)/$(<F)' '$@'; fi
 endef
 else ifeq ($(OPENJDK_TARGET_OS),macosx)
 define install-file
