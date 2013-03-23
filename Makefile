@@ -28,7 +28,7 @@
 
 # If not specified, select what the default build is
 ifndef NEWBUILD
-  NEWBUILD=false
+  NEWBUILD=true
 endif
 
 ifeq ($(NEWBUILD),true)

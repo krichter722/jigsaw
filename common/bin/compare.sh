@@ -145,7 +145,7 @@ compare_dirs() {
     (cd $OTHER_DIR && $FIND . -type d | $SORT > $WORK_DIR/dirs_other)
     (cd $THIS_DIR && $FIND . -type d | $SORT > $WORK_DIR/dirs_this)
 
-    $DIFF $WORK_DIR/dirs_other $WORK_DIR/dirs_other > $WORK_DIR/dirs_diff
+    $DIFF $WORK_DIR/dirs_other $WORK_DIR/dirs_this > $WORK_DIR/dirs_diff
     
     echo -n Directory structure...
     if [ -s $WORK_DIR/dirs_diff ]; then
@@ -1037,6 +1037,15 @@ while [ -n "$1" ]; do
         -execs)
             CMP_EXECS=true
             ;;
+        -2dirs)
+            THIS_BASE_DIR="$2"
+            OTHER_BASE_DIR="$3"
+            THIS="$2"
+            OTHER="$3"
+            SKIP_DEFAULT=true
+            shift
+            shift
+            ;;
         -2zips)
             CMP_2_ZIPS=true
             THIS_FILE=$2
@@ -1108,136 +1117,138 @@ if [ -z "$FILTER" ]; then
     FILTER="$CAT"
 fi
 
-if [ -z "$OTHER" ]; then
-    OTHER="$THIS/../$LEGACY_BUILD_DIR"
-    if [ -d "$OTHER" ]; then
+if [ "$SKIP_DEFAULT" != "true" ]; then
+    if [ -z "$OTHER" ]; then
+        OTHER="$THIS/../$LEGACY_BUILD_DIR"
+        if [ -d "$OTHER" ]; then
+            OTHER="$( cd "$OTHER" && pwd )"
+        else
+            echo "Default old build directory does not exist:"
+            echo "$OTHER"
+            exit 1
+        fi
+        echo "Comparing to default old build:"
+        echo "$OTHER"
+        echo
+    else
+        if [ ! -d "$OTHER" ]; then
+            echo "Other build directory does not exist:"
+            echo "$OTHER"
+            exit 1
+        fi
         OTHER="$( cd "$OTHER" && pwd )"
-    else
-        echo "Default old build directory does not exist:"
+        echo "Comparing to:"
         echo "$OTHER"
-        exit 1
+        echo
     fi
-    echo "Comparing to default old build:"
-    echo "$OTHER"
-    echo
-else
-    if [ ! -d "$OTHER" ]; then
-        echo "Other build directory does not exist:"
-        echo "$OTHER"
-        exit 1
-    fi
-    OTHER="$( cd "$OTHER" && pwd )"
-    echo "Comparing to:"
-    echo "$OTHER"
-    echo
-fi
-
-
-# Figure out the layout of the this build. Which kinds of images have been produced
-if [ -d "$THIS/install/j2sdk-image" ]; then
-    THIS_J2SDK="$THIS/install/j2sdk-image"
-    THIS_J2RE="$THIS/install/j2re-image"
-    echo "Comparing install images"
-elif [ -d "$THIS/deploy/j2sdk-image" ]; then
-    THIS_J2SDK="$THIS/deploy/j2sdk-image"
-    THIS_J2RE="$THIS/deploy/j2re-image"
-    echo "Comparing deploy images"
-elif [ -d "$THIS/images/j2sdk-image" ]; then
-    THIS_J2SDK="$THIS/images/j2sdk-image"
-    THIS_J2RE="$THIS/images/j2re-image"
-fi
-
-if [ -d "$THIS/images/j2sdk-overlay-image" ]; then
+    
+    
+    # Figure out the layout of the this build. Which kinds of images have been produced
     if [ -d "$THIS/install/j2sdk-image" ]; then
-        # If there is an install image, prefer that, it's also overlay
-        THIS_J2SDK_OVERLAY="$THIS/install/j2sdk-image"
-        THIS_J2RE_OVERLAY="$THIS/install/j2re-image"
-    else
-        THIS_J2SDK_OVERLAY="$THIS/images/j2sdk-overlay-image"
-        THIS_J2RE_OVERLAY="$THIS/images/j2re-overlay-image"
+        THIS_J2SDK="$THIS/install/j2sdk-image"
+        THIS_J2RE="$THIS/install/j2re-image"
+        echo "Comparing install images"
+    elif [ -d "$THIS/deploy/j2sdk-image" ]; then
+        THIS_J2SDK="$THIS/deploy/j2sdk-image"
+        THIS_J2RE="$THIS/deploy/j2re-image"
+        echo "Comparing deploy images"
+    elif [ -d "$THIS/images/j2sdk-image" ]; then
+        THIS_J2SDK="$THIS/images/j2sdk-image"
+        THIS_J2RE="$THIS/images/j2re-image"
     fi
-fi
-
-if [ -d "$THIS/images/j2sdk-bundle" ]; then
-    THIS_J2SDK_BUNDLE="$THIS/images/j2sdk-bundle"
-    THIS_J2RE_BUNDLE="$THIS/images/j2re-bundle"
-fi
-
-# Figure out the layout of the other build (old or new, normal or overlay image)
-if [ -d "$OTHER/j2sdk-image" ]; then
-    if [ -f "$OTHER/j2sdk-image/LICENSE" ]; then
-        OTHER_J2SDK="$OTHER/j2sdk-image"
-        OTHER_J2RE="$OTHER/j2re-image"
-    else
-        OTHER_J2SDK_OVERLAY="$OTHER/j2sdk-image"
-        OTHER_J2RE_OVERLAY="$OTHER/j2re-image"
+    
+    if [ -d "$THIS/images/j2sdk-overlay-image" ]; then
+        if [ -d "$THIS/install/j2sdk-image" ]; then
+            # If there is an install image, prefer that, it's also overlay
+            THIS_J2SDK_OVERLAY="$THIS/install/j2sdk-image"
+            THIS_J2RE_OVERLAY="$THIS/install/j2re-image"
+        else
+            THIS_J2SDK_OVERLAY="$THIS/images/j2sdk-overlay-image"
+            THIS_J2RE_OVERLAY="$THIS/images/j2re-overlay-image"
+        fi
     fi
-elif [ -d "$OTHER/images/j2sdk-image" ]; then
-    OTHER_J2SDK="$OTHER/images/j2sdk-image"
-    OTHER_J2RE="$OTHER/images/j2re-image"
-fi
-
-if [ -d "$OTHER/j2sdk-bundle" ]; then
-    OTHER_J2SDK_BUNDLE="$OTHER/j2sdk-bundle"
-    OTHER_J2RE_BUNDLE="$OTHER/j2re-bundle"
-elif [ -d "$OTHER/images/j2sdk-bundle" ]; then
-    OTHER_J2SDK_BUNDLE="$OTHER/images/j2sdk-bundle"
-    OTHER_J2RE_BUNDLE="$OTHER/images/j2re-bundle"
-fi
-
-if [ -z "$THIS_J2SDK" ] || [ -z "$THIS_J2RE" ]; then
-    if [ -z "$THIS_J2SDK_OVERLAY" ]; then
-        echo "Cannot locate images for this build. Are you sure you have run 'make images'?"
+    
+    if [ -d "$THIS/images/j2sdk-bundle" ]; then
+        THIS_J2SDK_BUNDLE="$THIS/images/j2sdk-bundle"
+        THIS_J2RE_BUNDLE="$THIS/images/j2re-bundle"
+    fi
+    
+    # Figure out the layout of the other build (old or new, normal or overlay image)
+    if [ -d "$OTHER/j2sdk-image" ]; then
+        if [ -f "$OTHER/j2sdk-image/LICENSE" ]; then
+            OTHER_J2SDK="$OTHER/j2sdk-image"
+            OTHER_J2RE="$OTHER/j2re-image"
+        else
+            OTHER_J2SDK_OVERLAY="$OTHER/j2sdk-image"
+            OTHER_J2RE_OVERLAY="$OTHER/j2re-image"
+        fi
+    elif [ -d "$OTHER/images/j2sdk-image" ]; then
+        OTHER_J2SDK="$OTHER/images/j2sdk-image"
+        OTHER_J2RE="$OTHER/images/j2re-image"
+    fi
+    
+    if [ -d "$OTHER/j2sdk-bundle" ]; then
+        OTHER_J2SDK_BUNDLE="$OTHER/j2sdk-bundle"
+        OTHER_J2RE_BUNDLE="$OTHER/j2re-bundle"
+    elif [ -d "$OTHER/images/j2sdk-bundle" ]; then
+        OTHER_J2SDK_BUNDLE="$OTHER/images/j2sdk-bundle"
+        OTHER_J2RE_BUNDLE="$OTHER/images/j2re-bundle"
+    fi
+    
+    if [ -z "$THIS_J2SDK" ] || [ -z "$THIS_J2RE" ]; then
+        if [ -z "$THIS_J2SDK_OVERLAY" ]; then
+            echo "Cannot locate images for this build. Are you sure you have run 'make images'?"
+            exit 1
+        fi
+    fi
+    
+    if [ -z "$OTHER_J2SDK" ] && [ -n "$OTHER_J2SDK_OVERLAY" ] && [ -z "$THIS_J2SDK_OVERLAY" ]; then
+        echo "OTHER build only has an overlay image while this build does not. Nothing to compare!"
         exit 1
     fi
-fi
-
-if [ -z "$OTHER_J2SDK" ] && [ -n "$OTHER_J2SDK_OVERLAY" ] && [ -z "$THIS_J2SDK_OVERLAY" ]; then
-    echo "OTHER build only has an overlay image while this build does not. Nothing to compare!"
-    exit 1
-fi
-
-if [ -z "$THIS_J2SDK_BUNDLE" ] && [ -n "$OTHER_J2SDK_BUNDLE" ]; then
-    echo "WARNING! OTHER build has bundles built while this build does not."
-    echo "Skipping bundle compare!"
-fi
-
-if [ -d "$THIS/docs" ]; then
-    THIS_DOCS="$THIS/docs"
-fi
-
-if [ -d "$OTHER/docs" ]; then
-    OTHER_DOCS="$OTHER/docs"
-fi
-
-if [ -z "$THIS_DOCS" ]; then
-    echo "WARNING! Docs haven't been built and won't be compared."
-fi
-
-if [ -z "$OTHER_DOCS" ]; then
-    echo "WARNING! Other build doesn't contain docs, skipping doc compare."
-fi
-
-if [ -d "$OTHER/images" ]; then
-    OTHER_SEC_DIR="$OTHER/images"
-else
-    OTHER_SEC_DIR="$OTHER/tmp"
-fi
-OTHER_SEC_BIN="$OTHER_SEC_DIR/sec-bin.zip"
-THIS_SEC_DIR="$THIS/images"
-THIS_SEC_BIN="$THIS_SEC_DIR/sec-bin.zip"
-if [ "$OPENJDK_TARGET_OS" = "windows" ]; then
-    if [ "$OPENJDK_TARGET_CPU" = "x86_64" ]; then
-        JGSS_WINDOWS_BIN="jgss-windows-x64-bin.zip"
-    else
-        JGSS_WINDOWS_BIN="jgss-windows-i586-bin.zip"
+    
+    if [ -z "$THIS_J2SDK_BUNDLE" ] && [ -n "$OTHER_J2SDK_BUNDLE" ]; then
+        echo "WARNING! OTHER build has bundles built while this build does not."
+        echo "Skipping bundle compare!"
     fi
-    OTHER_SEC_WINDOWS_BIN="$OTHER_SEC_DIR/sec-windows-bin.zip"
-    OTHER_JGSS_WINDOWS_BIN="$OTHER_SEC_DIR/$JGSS_WINDOWS_BIN"
-    THIS_SEC_WINDOWS_BIN="$THIS_SEC_DIR/sec-windows-bin.zip"
-    THIS_JGSS_WINDOWS_BIN="$THIS_SEC_DIR/$JGSS_WINDOWS_BIN"
-fi
+    
+    if [ -d "$THIS/docs" ]; then
+        THIS_DOCS="$THIS/docs"
+    fi
+    
+    if [ -d "$OTHER/docs" ]; then
+        OTHER_DOCS="$OTHER/docs"
+    fi
+    
+    if [ -z "$THIS_DOCS" ]; then
+        echo "WARNING! Docs haven't been built and won't be compared."
+    fi
+    
+    if [ -z "$OTHER_DOCS" ]; then
+        echo "WARNING! Other build doesn't contain docs, skipping doc compare."
+    fi
+    
+    if [ -d "$OTHER/images" ]; then
+        OTHER_SEC_DIR="$OTHER/images"
+    else
+        OTHER_SEC_DIR="$OTHER/tmp"
+    fi
+    OTHER_SEC_BIN="$OTHER_SEC_DIR/sec-bin.zip"
+    THIS_SEC_DIR="$THIS/images"
+    THIS_SEC_BIN="$THIS_SEC_DIR/sec-bin.zip"
+    if [ "$OPENJDK_TARGET_OS" = "windows" ]; then
+        if [ "$OPENJDK_TARGET_CPU" = "x86_64" ]; then
+            JGSS_WINDOWS_BIN="jgss-windows-x64-bin.zip"
+        else
+            JGSS_WINDOWS_BIN="jgss-windows-i586-bin.zip"
+        fi
+        OTHER_SEC_WINDOWS_BIN="$OTHER_SEC_DIR/sec-windows-bin.zip"
+        OTHER_JGSS_WINDOWS_BIN="$OTHER_SEC_DIR/$JGSS_WINDOWS_BIN"
+        THIS_SEC_WINDOWS_BIN="$THIS_SEC_DIR/sec-windows-bin.zip"
+        THIS_JGSS_WINDOWS_BIN="$THIS_SEC_DIR/$JGSS_WINDOWS_BIN"
+    fi
 
+fi
 ##########################################################################################
 # Do the work
 
@@ -1280,6 +1291,10 @@ if [ "$CMP_NAMES" = "true" ]; then
         compare_dirs $THIS_DOCS $OTHER_DOCS $COMPARE_ROOT/docs
         echo -n "Docs "
         compare_files $THIS_DOCS $OTHER_DOCS $COMPARE_ROOT/docs
+    fi
+    if [ -n "$THIS_BASE_DIR" ] && [ -n "$OTHER_BASE_DIR" ]; then
+        compare_dirs $THIS_BASE_DIR $OTHER_BASE_DIR $COMPARE_ROOT/base_dir
+        compare_files $THIS_BASE_DIR $OTHER_BASE_DIR $COMPARE_ROOT/base_dir
     fi
 fi
 

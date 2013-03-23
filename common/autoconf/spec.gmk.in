@@ -232,7 +232,9 @@ JAXWS_OUTPUTDIR=$(BUILD_OUTPUT)/jaxws
 HOTSPOT_OUTPUTDIR=$(BUILD_OUTPUT)/hotspot
 BDB_OUTPUTDIR=@BDB_OUTPUTDIR@
 JDK_OUTPUTDIR=$(BUILD_OUTPUT)/jdk
-IMAGES_OUTPUTDIR=$(BUILD_OUTPUT)/images
+IMAGES_OUTPUTDIR=$(BUILD_OUTPUT)/legacy-images
+POSTMODULES_OUTPUTDIR=$(BUILD_OUTPUT)/post-modules
+MODULEIMAGES_OUTPUTDIR=$(BUILD_OUTPUT)/images
 JCE_OUTPUTDIR=$(BUILD_OUTPUT)/jce-release
 
 LANGTOOLS_DIST=$(LANGTOOLS_OUTPUTDIR)/dist
@@ -251,6 +253,8 @@ BOOT_JDK:=@BOOT_JDK@
 BOOT_JDK_JVMARGS:=@BOOT_JDK_JVMARGS@
 BOOT_RTJAR:=@BOOT_RTJAR@
 BOOT_TOOLSJAR=$(BOOT_JDK)/lib/tools.jar
+
+BUILD_JDK:=@BUILD_JDK@
 
 # When compiling Java source to be run by the boot jdk
 # use these extra flags, eg -source 6 -target 6
@@ -432,12 +436,15 @@ JAVAC=@FIXPATH@ $(BOOT_JDK)/bin/javac
 JAVAC_FLAGS?=@JAVAC_FLAGS@
 
 JAVAH=@FIXPATH@ $(BOOT_JDK)/bin/javah
-
 JAR=@FIXPATH@ $(BOOT_JDK)/bin/jar
-
 RMIC=@FIXPATH@ $(BOOT_JDK)/bin/rmic
-
 NATIVE2ASCII=@FIXPATH@ $(BOOT_JDK)/bin/native2ascii
+
+BUILD_JAVA_FLAGS:=-Xms64M -Xmx1100M 
+BUILD_JAVA=@FIXPATH@ $(BUILD_JDK)/bin/java $(BUILD_JAVA_FLAGS)
+BUILD_JAVAC=@FIXPATH@ $(BUILD_JDK)/bin/javac
+BUILD_JMOD=@FIXPATH@ $(BUILD_JDK)/bin/jmod
+BUILD_JPKG=@FIXPATH@ $(BUILD_JDK)/bin/jpkg
 
 JARSIGNER=@FIXPATH@ $(BOOT_JDK)/bin/jarsigner
 
@@ -613,6 +620,13 @@ INSTALL_SHAREDSTATEDIR=@sharedstatedir@
 # Read-only single-machine data
 INSTALL_SYSCONFDIR=@sysconfdir@
 
+#
+# Location for JCE codesigning key.
+#
+SIGNING_KEY_DIR    := /security/ws/JCE-signing/src
+SIGNING_KEYSTORE   := $(SIGNING_KEY_DIR)/KeyStore.jks
+SIGNING_PASSPHRASE := $(SIGNING_KEY_DIR)/passphrase.txt
+SIGNING_ALIAS      := oracle_jce_rsa
 
 ####################################################
 #

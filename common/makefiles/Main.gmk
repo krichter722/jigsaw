@@ -130,7 +130,19 @@ demos-only: start-make
 	@($(CD) $(JDK_TOPDIR)/makefiles && $(BUILD_LOG_WRAPPER) $(MAKE) $(MAKE_ARGS) -f BuildJdk.gmk demos)
 	@$(call TargetExit)
 
-images: source-tips demos images-only
+legacy-images: source-tips demos legacy-images-only
+legacy-images-only: start-make
+	@$(call TargetEnter)
+	@($(CD) $(JDK_TOPDIR)/makefiles && $(BUILD_LOG_WRAPPER) $(MAKE) $(MAKE_ARGS) -f BuildJdk.gmk legacy-images)
+	@$(call TargetExit)
+
+post-modules: jdk demos post-modules-only
+post-modules-only: start-make
+	@$(call TargetEnter)
+	@($(CD) $(JDK_TOPDIR)/makefiles && $(BUILD_LOG_WRAPPER) $(MAKE) $(MAKE_ARGS) -f BuildJdk.gmk post-modules)
+	@$(call TargetExit)
+
+images: post-modules images-only
 images-only: start-make
 	@$(call TargetEnter)
 	@($(CD) $(JDK_TOPDIR)/makefiles && $(BUILD_LOG_WRAPPER) $(MAKE) $(MAKE_ARGS) -f BuildJdk.gmk images)
@@ -216,6 +228,10 @@ clean-jdk:
 	$(call CleanComponent,jdk)
 clean-images:
 	$(call CleanComponent,images)
+clean-post-modules:
+	$(call CleanComponent,post-modules)
+clean-legacy-images:
+	$(call CleanComponent,legacy-images)
 clean-overlay-images:
 	$(call CleanComponent,overlay-images)
 clean-bootcycle-build:
@@ -224,9 +240,9 @@ clean-docs:
 	$(call CleanComponent,docs)
 	$(call CleanComponent,docstemp)
 
-.PHONY: langtools corba jaxp jaxws hotspot bdb jdk images overlay-images install
-.PHONY: langtools-only corba-only jaxp-only jaxws-only hotspot-only bdb-only jdk-only images-only overlay-images-only install-only
+.PHONY: langtools corba jaxp jaxws hotspot bdb jdk images overlay-images post-modules legacy-images install
+.PHONY: langtools-only corba-only jaxp-only jaxws-only hotspot-only bdb-only jdk-only images-only overlay-images-only post-modules-only legacy-images-only install-only
 .PHONY: all test clean dist-clean bootcycle-images start-make
-.PHONY: clean-langtools clean-corba clean-jaxp clean-jaxws clean-hotspot clean-bdb clean-jdk clean-images clean-overlay-images clean-bootcycle-build
+.PHONY: clean-langtools clean-corba clean-jaxp clean-jaxws clean-hotspot clean-bdb clean-jdk clean-images clean-overlay-images clean-post-modules clean-legacy-images clean-bootcycle-build
 
 FRC: # Force target

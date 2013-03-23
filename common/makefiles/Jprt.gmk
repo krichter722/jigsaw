@@ -148,7 +148,10 @@ PHONY_LIST += bridge2configure bridgeBuild
 # JPRT targets
 
 ifndef JPRT_ARCHIVE_BUNDLE
-  JPRT_ARCHIVE_BUNDLE=/tmp/jprt_bundles/j2sdk-image.zip
+  JPRT_ARCHIVE_BUNDLE=/tmp/jprt_bundles/jdk-module-image.zip
+endif
+ifndef JPRT_ARCHIVE_MODULES_BUNDLE
+  JPRT_ARCHIVE_BUNDLE=/tmp/jprt_bundles/modules.zip
 endif
 ifndef JPRT_ARCHIVE_INSTALL_BUNDLE
     JPRT_ARCHIVE_INSTALL_BUNDLE=/tmp/jprt_bundles/product-install.zip
@@ -172,29 +175,32 @@ jprt_build_generic: BRIDGE_TARGETS+=jprt_bundle
 jprt_build_generic: bridgeBuild
 
 # This target must be called in the context of a SPEC file
-jprt_bundle: $(JPRT_ARCHIVE_BUNDLE)
+jprt_bundle: $(JPRT_ARCHIVE_BUNDLE) $(JPRT_ARCHIVE_MODULES_BUNDLE)
 	@$(call CheckIfMakeAtEnd)
 
 # This target must be called in the context of a SPEC file
 $(JPRT_ARCHIVE_BUNDLE): bundles
 	$(MKDIR) -p $(@D)
 	$(RM) $@
-	$(CP) $(BUILD_OUTPUT)/bundles/j2sdk-image.zip $@
+	$(CP) $(BUILD_OUTPUT)/bundles/jdk-module-image.zip $@
 
 # This target must be called in the context of a SPEC file
-bundles: all
+$(JPRT_ARCHIVE_MODULES_BUNDLE): bundles
+	$(MKDIR) -p $(@D)
+	$(RM) $@
+	$(CP) $(BUILD_OUTPUT)/bundles/modules.zip $@
+
+# This target must be called in the context of a SPEC file
+# Bundle up the images
+bundles: all bundles-only
+bundles-only: start-make
 	@$(call TargetEnter)
 	$(MKDIR) -p $(BUILD_OUTPUT)/bundles
-ifeq ($(OPENJDK_TARGET_OS)-$(OPENJDK_TARGET_CPU_BITS),solaris-64)
-	$(CD) $(JDK_OVERLAY_IMAGE_DIR) && $(ZIP) -q -r $(BUILD_OUTPUT)/bundles/j2sdk-image.zip .
-	$(CD) $(JRE_OVERLAY_IMAGE_DIR) && $(ZIP) -q -r $(BUILD_OUTPUT)/bundles/j2re-image.zip .
-else
-	$(CD) $(JDK_IMAGE_DIR) && $(ZIP) -q -r $(BUILD_OUTPUT)/bundles/j2sdk-image.zip .
-	$(CD) $(JRE_IMAGE_DIR) && $(ZIP) -q -r $(BUILD_OUTPUT)/bundles/j2re-image.zip .
+	$(CD) $(MODULEIMAGES_OUTPUTDIR)/jdk-module-image && $(ZIP) -q -r $(BUILD_OUTPUT)/bundles/jdk-module-image.zip .
+	$(CD) $(MODULEIMAGES_OUTPUTDIR) && $(ZIP) -q -r $(BUILD_OUTPUT)/bundles/modules.zip jre-base-image jigsaw-pkgs
 	if [ -d  $(BUILD_OUTPUT)/install/bundles ] ; then \
            $(CD) $(BUILD_OUTPUT)/install/bundles && $(ZIP) -q -r $(JPRT_ARCHIVE_INSTALL_BUNDLE) . ; \
         fi
-endif
 	@$(call TargetExit)
 
 # Keep track of phony targets

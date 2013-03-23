@@ -246,7 +246,7 @@ if test "x$with_override_hotspot" != x; then
     fi
     AC_MSG_CHECKING([if hotspot should be overridden])
     AC_MSG_RESULT([yes with $HOTSPOT_TOPDIR])
-fi    
+fi
 if test "x$with_override_bdb" != x; then
     CURDIR="$PWD"
     cd "$with_override_bdb"
