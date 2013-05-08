@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2011, 2012, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2001, 2011, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # This code is free software; you can redistribute it and/or modify it
@@ -23,31 +23,37 @@
 # questions.
 #
 
-# Support for building boot cycle builds
+################################################################
+# NASHORN TARGETS
+################################################################
 
-# First include the real base spec.gmk file
-include @SPEC@
+NASHORN_BUILD_ARGUMENTS = \
+   $(COMMON_BUILD_ARGUMENTS) \
+   ALT_OUTPUTDIR=$(NASHORN_OUTPUTDIR) \
+   ALT_BOOTDIR=$(BOOTDIR) \
+   ALT_JDK_IMPORT_PATH=$(JDK_IMPORT_PATH)
 
-# Check that the user did not try to specify a different java to use for compiling.
-# On windows we need to account for fixpath being first word.
-ifeq ($(firstword $(JAVA)),$(FIXPATH))
-  JAVA_EXEC_POS=2
-else
-  JAVA_EXEC_POS=1
-endif
-ifneq ($(word $(JAVA_EXEC_POS),$(SJAVAC_SERVER_JAVA)),$(word $(JAVA_EXEC_POS),$(JAVA)))
-    $(error Bootcycle builds are not possible if --with-sjavac-server-java is specified)
+ifeq ($(BUILD_LANGTOOLS), true)
+   NASHORN_BUILD_ARGUMENTS += ALT_LANGTOOLS_DIST=$(ABS_LANGTOOLS_DIST)
 endif
 
+# Default targets
+NASHORN = nashorn-build
 
-# Override specific values to do a boot cycle build
+nashorn: nashorn-build
+nashorn-build:
+	$(MKDIR) -p $(NASHORN_OUTPUTDIR)
+	@$(call MakeStart,nashorn,all)
+	($(CD) $(NASHORN_TOPDIR)/make && \
+	 $(MAKE) $(NASHORN_BUILD_ARGUMENTS) all)
+	@$(call MakeFinish,nashorn,all)
 
-# The bootcycle build has a different output directory
-BUILD_OUTPUT:=@BUILD_OUTPUT@/bootcycle-build
+nashorn-clobber::
+	$(MKDIR) -p $(NASHORN_OUTPUTDIR)
+	@$(call MakeStart,nashorn,clobber)
+	($(CD) $(NASHORN_TOPDIR)/make &&  \
+	 $(MAKE) $(NASHORN_BUILD_ARGUMENTS) clobber)
+	@$(call MakeFinish,nashorn,clobber)
 
-# Use a different Boot JDK
-OLD_BOOT_JDK:=$(BOOT_JDK)
-BOOT_JDK:=@BUILD_OUTPUT@/images/j2sdk-image
-BOOT_RTJAR:=@BUILD_OUTPUT@/images/j2sdk-image/jre/lib/rt.jar
+.PHONY: nashorn nashorn-build nashorn-clobber 
 
-SJAVAC_SERVER_JAVA:=$(subst $(OLD_BOOT_JDK),$(BOOT_JDK),$(SJAVAC_SERVER_JAVA))

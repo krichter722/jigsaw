@@ -176,6 +176,7 @@ AC_DEFUN([TOOLCHAIN_SETUP_PATHS],
 [
 if test "x$OPENJDK_TARGET_OS" = "xwindows"; then
   TOOLCHAIN_SETUP_VISUAL_STUDIO_ENV
+  TOOLCHAIN_SETUP_DXSDK
 fi
 
 AC_SUBST(MSVCR_DLL)
@@ -248,30 +249,38 @@ fi
 
 ### Locate C compiler (CC)
 
-# gcc is almost always present, but on Windows we
-# prefer cl.exe and on Solaris we prefer CC.
-# Thus test for them in this order.
-if test "x$OPENJDK_TARGET_OS" = xmacosx; then
-  # Do not probe for cc on MacOSX.
-  COMPILER_CHECK_LIST="cl gcc"
+# On windows, only cl.exe is supported.
+# On Solaris, cc is preferred to gcc.
+# Elsewhere, gcc is preferred to cc.
+
+if test "x$CC" != x; then
+  COMPILER_CHECK_LIST="$CC"
+elif test "x$OPENJDK_TARGET_OS" = "xwindows"; then
+  COMPILER_CHECK_LIST="cl"
+elif test "x$OPENJDK_TARGET_OS" = "xsolaris"; then
+  COMPILER_CHECK_LIST="cc gcc"
 else
-  COMPILER_CHECK_LIST="cl cc gcc"
+  COMPILER_CHECK_LIST="gcc cc"
 fi
 
 TOOLCHAIN_FIND_COMPILER([CC],[C],[$COMPILER_CHECK_LIST])
-# Now that we have resolved CC ourself, let autoconf have it's go at it
+# Now that we have resolved CC ourself, let autoconf have its go at it
 AC_PROG_CC([$CC])
 
 ### Locate C++ compiler (CXX)
 
-if test "x$OPENJDK_TARGET_OS" = xmacosx; then
-  # Do not probe for CC on MacOSX.
-  COMPILER_CHECK_LIST="cl g++"
+if test "x$CXX" != x; then
+  COMPILER_CHECK_LIST="$CXX"
+elif test "x$OPENJDK_TARGET_OS" = "xwindows"; then
+  COMPILER_CHECK_LIST="cl"
+elif test "x$OPENJDK_TARGET_OS" = "xsolaris"; then
+  COMPILER_CHECK_LIST="CC g++"
 else
-  COMPILER_CHECK_LIST="cl CC g++"
+  COMPILER_CHECK_LIST="g++ CC"
 fi
+
 TOOLCHAIN_FIND_COMPILER([CXX],[C++],[$COMPILER_CHECK_LIST])
-# Now that we have resolved CXX ourself, let autoconf have it's go at it
+# Now that we have resolved CXX ourself, let autoconf have its go at it
 AC_PROG_CXX([$CXX])
 
 ### Locate other tools
@@ -432,8 +441,10 @@ fi
 AC_SUBST(AS)
 
 if test "x$OPENJDK_TARGET_OS" = xsolaris; then
-    AC_PATH_PROGS(NM, [gnm nm])
+    AC_PATH_PROG(NM, nm)
     BASIC_FIXUP_EXECUTABLE(NM)
+    AC_PATH_PROG(GNM, gnm)
+    BASIC_FIXUP_EXECUTABLE(GNM)
     AC_PATH_PROG(STRIP, strip)
     BASIC_FIXUP_EXECUTABLE(STRIP)
     AC_PATH_PROG(MCS, mcs)
@@ -441,6 +452,8 @@ if test "x$OPENJDK_TARGET_OS" = xsolaris; then
 elif test "x$OPENJDK_TARGET_OS" != xwindows; then
     AC_CHECK_TOOL(NM, nm)
     BASIC_FIXUP_EXECUTABLE(NM)
+    GNM="$NM"
+    AC_SUBST(GNM)
     AC_CHECK_TOOL(STRIP, strip)
     BASIC_FIXUP_EXECUTABLE(STRIP)
 fi
@@ -560,6 +573,7 @@ else
     fi
 fi
 
+AC_SUBST(COMPILER_NAME)
 AC_SUBST(OBJ_SUFFIX)
 AC_SUBST(SHARED_LIBRARY)
 AC_SUBST(STATIC_LIBRARY)
@@ -876,6 +890,17 @@ if test "x$OPENJDK_TARGET_OS" = xsolaris; then
 fi
 if test "x$OPENJDK_TARGET_OS" = xmacosx; then
     CCXXFLAGS_JDK="$CCXXFLAGS_JDK -DMACOSX -D_ALLBSD_SOURCE"
+    # Setting these parameters makes it an error to link to macosx APIs that are 
+    # newer than the given OS version and makes the linked binaries compatible even
+    # if built on a newer version of the OS.
+    # The expected format is X.Y.Z
+    MACOSX_VERSION_MIN=10.7.0
+    AC_SUBST(MACOSX_VERSION_MIN)
+    # The macro takes the version with no dots, ex: 1070
+    # Let the flags variables get resolved in make for easier override on make
+    # command line.
+    CCXXFLAGS_JDK="$CCXXFLAGS_JDK -DMAC_OS_X_VERSION_MAX_ALLOWED=\$(subst .,,\$(MACOSX_VERSION_MIN)) -mmacosx-version-min=\$(MACOSX_VERSION_MIN)"
+    LDFLAGS_JDK="$LDFLAGS_JDK -mmacosx-version-min=\$(MACOSX_VERSION_MIN)"
 fi
 if test "x$OPENJDK_TARGET_OS" = xbsd; then
     CCXXFLAGS_JDK="$CCXXFLAGS_JDK -DBSD -D_ALLBSD_SOURCE"
@@ -1005,4 +1030,62 @@ AC_SUBST(LDFLAGS_JDKEXE)
 AC_SUBST(LDFLAGS_JDKLIB_SUFFIX)
 AC_SUBST(LDFLAGS_JDKEXE_SUFFIX)
 AC_SUBST(LDFLAGS_CXX_JDK)
+])
+
+
+# TOOLCHAIN_COMPILER_CHECK_ARGUMENTS([ARGUMENT], [RUN-IF-TRUE],
+#                                   [RUN-IF-FALSE])
+# ------------------------------------------------------------
+# Check that the c and c++ compilers support an argument
+AC_DEFUN([TOOLCHAIN_COMPILER_CHECK_ARGUMENTS],
+[
+  AC_MSG_CHECKING([if compiler supports "$1"])
+  supports=yes
+
+  saved_cflags="$CFLAGS"
+  CFLAGS="$CFLAGS $1"
+  AC_LANG_PUSH([C])
+  AC_COMPILE_IFELSE([
+    AC_LANG_SOURCE([[int i;]])
+  ], [], [supports=no])
+  AC_LANG_POP([C])
+  CFLAGS="$saved_cflags"
+
+  saved_cxxflags="$CXXFLAGS"
+  CXXFLAGS="$CXXFLAG $1"
+  AC_LANG_PUSH([C++])
+  AC_COMPILE_IFELSE([
+    AC_LANG_SOURCE([[int i;]])
+  ], [], [supports=no])
+  AC_LANG_POP([C++])
+  CXXFLAGS="$saved_cxxflags"
+
+  AC_MSG_RESULT([$supports])
+  if test "x$supports" = "xyes" ; then
+    m4_ifval([$2], [$2], [:])
+  else
+    m4_ifval([$3], [$3], [:])
+  fi
+])
+
+AC_DEFUN_ONCE([TOOLCHAIN_SETUP_COMPILER_FLAGS_MISC],
+[
+  # Some Zero and Shark settings.
+  # ZERO_ARCHFLAG tells the compiler which mode to build for
+  case "${OPENJDK_TARGET_CPU}" in
+    s390)
+      ZERO_ARCHFLAG="-m31"
+      ;;
+    *)
+      ZERO_ARCHFLAG="-m${OPENJDK_TARGET_CPU_BITS}"
+  esac
+  TOOLCHAIN_COMPILER_CHECK_ARGUMENTS([$ZERO_ARCHFLAG], [], [ZERO_ARCHFLAG=""])
+  AC_SUBST(ZERO_ARCHFLAG)
+
+  # Check that the compiler supports -mX flags
+  # Set COMPILER_SUPPORTS_TARGET_BITS_FLAG to 'true' if it does
+  TOOLCHAIN_COMPILER_CHECK_ARGUMENTS([-m${OPENJDK_TARGET_CPU_BITS}],
+    [COMPILER_SUPPORTS_TARGET_BITS_FLAG=true],
+    [COMPILER_SUPPORTS_TARGET_BITS_FLAG=false])
+  AC_SUBST(COMPILER_SUPPORTS_TARGET_BITS_FLAG)
 ])

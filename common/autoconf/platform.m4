@@ -332,6 +332,18 @@ AC_DEFUN([PLATFORM_SETUP_LEGACY_VARS],
       DEFINE_CROSS_COMPILE_ARCH=""
     fi
     AC_SUBST(DEFINE_CROSS_COMPILE_ARCH)
+
+    # ZERO_ARCHDEF is used to enable architecture-specific code
+    case "${OPENJDK_TARGET_CPU}" in
+      ppc*)    ZERO_ARCHDEF=PPC   ;;
+      s390*)   ZERO_ARCHDEF=S390  ;;
+      sparc*)  ZERO_ARCHDEF=SPARC ;;
+      x86_64*) ZERO_ARCHDEF=AMD64 ;;
+      x86)     ZERO_ARCHDEF=IA32  ;;
+      *)      ZERO_ARCHDEF=$(echo "${OPENJDK_TARGET_CPU_LEGACY_LIB}" | tr a-z A-Z)
+    esac
+    AC_SUBST(ZERO_ARCHDEF)
+
 ])
 
 AC_DEFUN([PLATFORM_SET_RELEASE_FILE_OS_VALUES],
@@ -421,6 +433,7 @@ AC_DEFUN_ONCE([PLATFORM_SETUP_OPENJDK_TARGET_BITS],
 # (The JVM can use 32 or 64 bit Java pointers but that decision
 # is made at runtime.)
 #
+
 if test "x$OPENJDK_TARGET_OS" = xsolaris; then
   # Always specify -m flags on Solaris
   PLATFORM_SET_COMPILER_TARGET_BITS_FLAGS

@@ -168,6 +168,7 @@ PLATFORM_SETUP_OPENJDK_TARGET_ENDIANNESS
 TOOLCHAIN_SETUP_COMPILER_FLAGS_FOR_LIBS
 TOOLCHAIN_SETUP_COMPILER_FLAGS_FOR_OPTIMIZATION
 TOOLCHAIN_SETUP_COMPILER_FLAGS_FOR_JDK
+TOOLCHAIN_SETUP_COMPILER_FLAGS_MISC
 
 # Setup debug symbols (need objcopy from the toolchain for that)
 JDKOPT_SETUP_DEBUG_SYMBOLS
@@ -196,6 +197,7 @@ BASIC_COMPILE_FIXPATH
 ###############################################################################
 
 JDKOPT_SETUP_BUILD_TWEAKS
+JDKOPT_DETECT_INTREE_EC
 
 ###############################################################################
 #
@@ -206,6 +208,7 @@ JDKOPT_SETUP_BUILD_TWEAKS
 
 BPERF_SETUP_BUILD_CORES
 BPERF_SETUP_BUILD_MEMORY
+BPERF_SETUP_BUILD_JOBS
 
 # Setup smart javac (after cores and memory have been setup)
 BPERF_SETUP_SMART_JAVAC

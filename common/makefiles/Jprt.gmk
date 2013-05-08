@@ -64,6 +64,10 @@ HOTSPOT_AVAILABLE := $(if $(wildcard $(root_dir)/hotspot),true,false)
 # Build with the configure bridge. After running configure, restart make
 # to parse the new spec file.
 BRIDGE_TARGETS := all
+# Add bootcycle-images target if legacy variable is set.
+ifeq ($(SKIP_BOOT_CYCLE),false)
+  BRIDGE_TARGETS += bootcycle-images
+endif
 bridgeBuild: bridge2configure
 	@cd $(root_dir) && $(MAKE) -f NewMakefile.gmk $(BRIDGE_TARGETS)
 
@@ -98,6 +102,9 @@ ifdef ALT_CUPS_HEADERS_PATH
 endif
 ifdef ALT_FREETYPE_HEADERS_PATH
 	@$(ECHO) " --with-freetype=$(call UnixPath,$(ALT_FREETYPE_HEADERS_PATH)/..) " >> $@.tmp
+endif
+ifdef ENABLE_SJAVAC
+	@$(ECHO) " --enable-sjavac" >> $@.tmp
 endif
 ifeq ($(HOTSPOT_AVAILABLE),false)
   ifdef ALT_JDK_IMPORT_PATH
@@ -184,7 +191,16 @@ $(JPRT_ARCHIVE_BUNDLE): bundles
 	$(RM) $@
 	$(CP) $(BUILD_OUTPUT)/bundles/jdk-module-image.zip $@
 
-# This target must be called in the context of a SPEC file
+ifeq ($(OPENJDK_TARGET_OS)-$(OPENJDK_TARGET_CPU_BITS),solaris-64)
+  SRC_JDK_IMAGE_DIR := $(JDK_OVERLAY_IMAGE_DIR)
+  SRC_JRE_IMAGE_DIR := $(JRE_OVERLAY_IMAGE_DIR)
+else
+  SRC_JDK_IMAGE_DIR := $(JDK_IMAGE_DIR)
+  SRC_JRE_IMAGE_DIR := $(JRE_IMAGE_DIR)
+endif
+SRC_JDK_BUNDLE_DIR := $(JDK_BUNDLE_DIR)
+SRC_JRE_BUNDLE_DIR := $(JRE_BUNDLE_DIR)
+
 $(JPRT_ARCHIVE_MODULES_BUNDLE): bundles
 	$(MKDIR) -p $(@D)
 	$(RM) $@
@@ -203,9 +219,27 @@ bundles-only: start-make
         fi
 	@$(call TargetExit)
 
+# Copy images to one unified location regardless of platform etc.
+final-images: all final-images-only
+final-images-only: start-make
+	@$(call TargetEnter)
+	$(RM) -r $(BUILD_OUTPUT)/final-images
+	$(MKDIR) -p $(BUILD_OUTPUT)/final-images/$(JDK_IMAGE_SUBDIR)
+	$(MKDIR) -p $(BUILD_OUTPUT)/final-images/$(JRE_IMAGE_SUBDIR)
+	$(CP) -R -P $(SRC_JDK_IMAGE_DIR)/* $(BUILD_OUTPUT)/final-images/$(JDK_IMAGE_SUBDIR)/
+	$(CP) -R -P $(SRC_JRE_IMAGE_DIR)/* $(BUILD_OUTPUT)/final-images/$(JRE_IMAGE_SUBDIR)/
+ifeq ($(OPENJDK_TARGET_OS),macosx)
+	$(MKDIR) -p $(BUILD_OUTPUT)/final-images/$(JDK_BUNDLE_SUBDIR)
+	$(MKDIR) -p $(BUILD_OUTPUT)/final-images/$(JRE_BUNDLE_SUBDIR)
+	$(CP) -R -P $(SRC_JDK_BUNDLE_DIR)/* $(BUILD_OUTPUT)/final-images/$(JDK_BUNDLE_SUBDIR)/
+	$(CP) -R -P $(SRC_JRE_BUNDLE_DIR)/* $(BUILD_OUTPUT)/final-images/$(JRE_BUNDLE_SUBDIR)/
+endif
+	@$(call TargetExit)
+
 # Keep track of phony targets
 PHONY_LIST += jprt_build_product jprt_build_fastdebug jprt_build_debug \
-              jprt_build_generic bundles jprt_bundle
+              jprt_build_generic bundles jprt_bundle \
+              final-images final-images-only
 
 ###########################################################################
 # Phony targets

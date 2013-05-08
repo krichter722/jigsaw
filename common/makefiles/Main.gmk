@@ -58,9 +58,6 @@ $(eval $(call ResetAllTimers))
 
 # Setup number of jobs to use. -jN is unfortunately not available for us to parse from the command line,
 # hence this workaround.
-ifeq ($(JOBS),)
-    JOBS=$(NUM_CORES)
-endif
 MAKE_ARGS:=$(MAKE_ARGS) -j$(JOBS)
 
 ### Main targets
@@ -75,7 +72,14 @@ ifeq ($(OPENJDK_TARGET_OS)-$(OPENJDK_TARGET_CPU_BITS),solaris-64)
   all: overlay-images
 endif
 
-start-make:
+# Setup a rule for SPEC file that fails if executed. This check makes sure the configuration
+# is up to date after changes to configure
+$(SPEC): $(wildcard $(SRC_ROOT)/common/autoconf/*)
+	@$(ECHO) ERROR: $(SPEC) is not up to date
+	@$(ECHO) Please rerun configure!
+	@if test "x$(IGNORE_OLD_CONFIG)" != "xtrue"; then exit 1; fi
+
+start-make: $(SPEC)
 	@$(call AtMakeStart)
 
 langtools: langtools-only
@@ -124,19 +128,27 @@ jdk-only: start-make
 	@($(CD) $(JDK_TOPDIR)/makefiles && $(BUILD_LOG_WRAPPER) $(MAKE) $(MAKE_ARGS) -f BuildJdk.gmk $(JDK_TARGET))
 	@$(call TargetExit)
 
+nashorn: jdk nashorn-only
+nashorn-only: start-make
+	@$(call TargetEnter)
+	@($(CD) $(NASHORN_TOPDIR)/makefiles && $(BUILD_LOG_WRAPPER) $(MAKE) $(MAKE_ARGS) -f BuildNashorn.gmk)
+	@$(call TargetExit)
+
 demos: jdk demos-only
 demos-only: start-make
 	@$(call TargetEnter)
 	@($(CD) $(JDK_TOPDIR)/makefiles && $(BUILD_LOG_WRAPPER) $(MAKE) $(MAKE_ARGS) -f BuildJdk.gmk demos)
 	@$(call TargetExit)
 
-legacy-images: source-tips demos legacy-images-only
+# Note: This double-colon rule is intentional, to support
+# custom make file integration.
+legacy-images:: source-tips demos nashorn legacy-images-only
 legacy-images-only: start-make
 	@$(call TargetEnter)
 	@($(CD) $(JDK_TOPDIR)/makefiles && $(BUILD_LOG_WRAPPER) $(MAKE) $(MAKE_ARGS) -f BuildJdk.gmk legacy-images)
 	@$(call TargetExit)
 
-post-modules: jdk demos post-modules-only
+post-modules: jdk demos nashorn post-modules-only
 post-modules-only: start-make
 	@$(call TargetEnter)
 	@($(CD) $(JDK_TOPDIR)/makefiles && $(BUILD_LOG_WRAPPER) $(MAKE) $(MAKE_ARGS) -f BuildJdk.gmk post-modules)
@@ -153,6 +165,17 @@ overlay-images-only: start-make
 	@$(call TargetEnter)
 	@($(CD) $(JDK_TOPDIR)/makefiles && $(BUILD_LOG_WRAPPER) $(MAKE) $(MAKE_ARGS) -f BuildJdk.gmk overlay-images)
 	@$(call TargetExit)
+
+profiles: profiles-oscheck source-tips jdk hotspot profiles-only
+profiles-only: start-make
+	@$(call TargetEnter)
+	@($(CD) $(JDK_TOPDIR)/makefiles && $(BUILD_LOG_WRAPPER) $(MAKE) $(MAKE_ARGS) -f BuildJdk.gmk profiles)
+	@$(call TargetExit)
+
+profiles-oscheck:
+ifneq ($(OPENJDK_TARGET_OS), linux)
+	@echo "Error: The Java SE 8 Compact Profiles are only implemented for Linux at this time" && exit 1
+endif
 
 install: images install-only
 install-only: start-make
@@ -172,15 +195,15 @@ sign-jars-only: start-make
 	@($(CD) $(JDK_TOPDIR)/makefiles && $(BUILD_LOG_WRAPPER) $(MAKE) $(MAKE_ARGS) -f BuildJdk.gmk sign-jars)
 	@$(call TargetExit)
 
-bootcycle-images:
-	@$(ECHO) Boot cycle build step 1: Building the JDK image normally
-	@($(CD) $(SRC_ROOT)/common/makefiles && $(BUILD_LOG_WRAPPER) $(MAKE) SPEC=$(SPEC) images)
+bootcycle-images: images bootcycle-images-only
+bootcycle-images-only: start-make
 	@$(ECHO) Boot cycle build step 2: Building a new JDK image using previously built image
 	@($(CD) $(SRC_ROOT)/common/makefiles && $(BUILD_LOG_WRAPPER) $(MAKE) SPEC=$(dir $(SPEC))bootcycle-spec.gmk images)
 
-test: start-make
+test: images test-only
+test-only: start-make
 	@$(call TargetEnter)
-	@($(CD) $(SRC_ROOT)/test && $(BUILD_LOG_WRAPPER) $(MAKE) MAKEFLAGS= -j1 PRODUCT_HOME=$(OUTPUT_ROOT)/jdk JPRT_JAVA_HOME=$(OUTPUT_ROOT)/jdk ALT_OUTPUTDIR=$(OUTPUT_ROOT) $(TEST)) || true
+	@($(CD) $(SRC_ROOT)/test && $(BUILD_LOG_WRAPPER) $(MAKE) -j1 -k MAKEFLAGS= PRODUCT_HOME=$(JDK_IMAGE_DIR) JPRT_JAVA_HOME=$(JDK_IMAGE_DIR) ALT_OUTPUTDIR=$(OUTPUT_ROOT) $(TEST)) || true
 	@$(call TargetExit)
 
 # Stores the tips for each repository. This file is be used when constructing the jdk image and can be
@@ -193,7 +216,7 @@ $(OUTPUT_ROOT)/source_tips: FRC
 
 
 # Remove everything, except the output from configure.
-clean: clean-langtools clean-corba clean-jaxp clean-jaxws clean-hotspot clean-jdk clean-images clean-overlay-images clean-bootcycle-build clean-docs
+clean: clean-langtools clean-corba clean-jaxp clean-jaxws clean-hotspot clean-jdk clean-nashorn clean-images clean-overlay-images clean-bootcycle-build clean-docs clean-test
 	@($(CD) $(OUTPUT_ROOT) && $(RM) -r tmp source_tips build.log* build-trace*.log*)
 	@$(ECHO) Cleaned all build artifacts.
 
@@ -226,6 +249,8 @@ clean-bdb:
 	@($(CD) $(SRC_ROOT)/common/makefiles && $(BUILD_LOG_WRAPPER) $(MAKE) $(MAKE_ARGS) -f BdbWrapper.gmk clean)
 clean-jdk:
 	$(call CleanComponent,jdk)
+clean-nashorn:
+	$(call CleanComponent,nashorn)
 clean-images:
 	$(call CleanComponent,images)
 clean-post-modules:
@@ -239,10 +264,13 @@ clean-bootcycle-build:
 clean-docs:
 	$(call CleanComponent,docs)
 	$(call CleanComponent,docstemp)
+clean-test:
+	$(call CleanComponent,testoutput)
 
-.PHONY: langtools corba jaxp jaxws hotspot bdb jdk images overlay-images post-modules legacy-images install
-.PHONY: langtools-only corba-only jaxp-only jaxws-only hotspot-only bdb-only jdk-only images-only overlay-images-only post-modules-only legacy-images-only install-only
+.PHONY: langtools corba jaxp jaxws hotspot bdb jdk nashorn post-modules legacy-images overlay-images install
+.PHONY: langtools-only corba-only jaxp-only jaxws-only hotspot-only bdb-only jdk-only nashorn-only images-only legacy-images-only post-modules-only overlay-images-only install-only
 .PHONY: all test clean dist-clean bootcycle-images start-make
-.PHONY: clean-langtools clean-corba clean-jaxp clean-jaxws clean-hotspot clean-bdb clean-jdk clean-images clean-overlay-images clean-post-modules clean-legacy-images clean-bootcycle-build
+.PHONY: clean-langtools clean-corba clean-jaxp clean-jaxws clean-hotspot clean-bdb clean-jdk clean-nashorn clean-images clean-post-modules clean-legacy-images clean-overlay-images clean-bootcycle-build
+.PHONY: profiles profiles-only profiles-oscheck
 
 FRC: # Force target

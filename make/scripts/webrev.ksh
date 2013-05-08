@@ -19,7 +19,7 @@
 #
 # CDDL HEADER END
 #
-# Copyright (c) 2008, 2011, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2008, 2013, Oracle and/or its affiliates. All rights reserved.
 # Use is subject to license terms.
 #
 # This script takes a file list and a workspace and builds a set of html files
@@ -27,7 +27,7 @@
 # Documentation is available via 'webrev -h'.
 #
 
-WEBREV_UPDATED=23.18-hg
+WEBREV_UPDATED=24.0-hg+jbs
 
 HTML='<?xml version="1.0"?>
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
@@ -146,7 +146,7 @@ html_quote()
 #
 bug2url()
 {
-	sed -e 's|[0-9]\{5,\}|<a href=\"'$BUGURL'&\">&</a>|g'
+	sed -e 's|[0-9]\{5,\}|<a href=\"'$BUGURL$IDPREFIX'&\">&</a>|g'
 }
 
 #
@@ -230,8 +230,8 @@ strip_unchanged()
 #   $ sdiff_to_html old/usr/src/tools/scripts/webrev.sh \
 #         new/usr/src/tools/scripts/webrev.sh \
 #         webrev.sh usr/src/tools/scripts \
-#         '<a href="http://monaco.sfbay.sun.com/detail.jsp?cr=1234567">
-#          1234567</a> my bugid' > <file>.html
+#         '<a href="https://jbs.oracle.com/bugs/browse/JDK-1234567">
+#          JDK-1234567</a> my bugid' > <file>.html
 #
 # framed_sdiff() is then called which creates $2.frames.html
 # in the webrev tree.
@@ -1160,7 +1160,7 @@ comments_from_mercurial()
 	            print "$comm"
 	            return
 	        fi
-	  
+
 	        print "$comm" | html_quote | bug2url | sac2url
                 )
         fi
@@ -1418,7 +1418,7 @@ function outgoing_from_mercurial_forest
                   next;}
         END       {for (tree in trees)
                         { rev=revs[trees[tree]];
-                          if (rev > 0) 
+                          if (rev > 0)
                                 {printf("%s %d\n",trees[tree],rev-1)}
                         }}' | while read LINE
     do
@@ -1436,17 +1436,17 @@ function flist_from_mercurial_forest
 {
     rm -f $FLIST
     if [ -z "$Nflag" ]; then
-	print " File list from hg foutgoing $PWS ..."
+        print " File list from hg foutgoing $PWS ..."
         outgoing_from_mercurial_forest
         HG_LIST_FROM_COMMIT=1
     fi
     if [ ! -f $FLIST ]; then
         # hg commit hasn't been run see what is lying around
-	print "\n No outgoing, perhaps you haven't commited."
-	print " File list from hg fstatus -mard ...\c"
+        print "\n No outgoing, perhaps you haven't commited."
+        print " File list from hg fstatus -mard ...\c"
         FSTAT_OPT=
         fstatus
-        HG_LIST_FROM_COMMIT=0
+        HG_LIST_FROM_COMMIT=
     fi
     print " Done."
 }
@@ -1459,14 +1459,14 @@ function treestatus
 {
     TREE=$1
     HGCMD="hg -R $CWS/$TREE status $FSTAT_OPT"
-    
+
     $HGCMD -mdn 2>/dev/null | $FILTER | while read F
     do
         echo $TREE/$F
     done >> $FLIST
 
     # Then all the added files
-    # But some of these could have been "moved" or renamed ones
+    # But some of these could have been "moved" or renamed ones or copied ones
     # so let's make sure we get the proper info
     # hg status -aC will produce something like:
     #	A subdir/File3
@@ -1474,8 +1474,11 @@ function treestatus
     #	  File4
     #	A subdir/File5
     # The first and last are simple addition while the middle one
-    # is a move/rename
-
+    # is a move/rename or a copy.  We can't distinguish from a rename vs a copy
+    # without also getting the status of removed files.  The middle case above
+    # is a rename if File4 is also shown a being removed.  If File4 is not a 
+    # removed file, then the middle case is a copy from File4 to subdir/File4
+    # FIXME - we're not distinguishing copy from rename
     $HGCMD -aC | $FILTER | while read LINE; do
 	ldone=""
 	while [ -z "$ldone" ]; do
@@ -1543,7 +1546,7 @@ function fstatus
 			 if (n == 0)
 				{ printf("A %s/%s\n",tree,$2)}
 			 else
-				{ printf("A %s\n",$2)}; 
+				{ printf("A %s\n",$2)};
 			 next}
 	/^ /		{n=index($1,tree);
 			 if (n == 0)
@@ -1604,7 +1607,7 @@ function fstatus
 # We need at least one of default-push or default paths set in .hg/hgrc
 # If neither are set we don't know who to compare with.
 
-function flist_from_mercurial 
+function flist_from_mercurial
 {
 #	if [ "${PWS##ssh://}" != "$PWS" -o \
 #	     "${PWS##http://}" != "$PWS" -o \
@@ -1638,8 +1641,12 @@ function flist_from_mercurial
 	#	A subdir/File4
 	#	  File4
 	#	A subdir/File5
-	# The first and last are simple addition while the middle one
-	# is a move/rename
+        # The first and last are simple addition while the middle one
+        # is a move/rename or a copy.  We can't distinguish from a rename vs a copy
+        # without also getting the status of removed files.  The middle case above
+        # is a rename if File4 is also shown a being removed.  If File4 is not a 
+        # removed file, then the middle case is a copy from File4 to subdir/File4
+        # FIXME - we're not distinguishing copy from rename
 
 	hg status $STATUS_REV -aC | $FILTER >$FLIST.temp
 	while read LINE; do
@@ -1757,7 +1764,7 @@ function look_for_prog
 	elif [[ "$OS" == "Linux" ]]; then
 	    DEVTOOLS="/java/devtools/linux/bin"
 	fi
-	    
+
 	ppath=$PATH
 	ppath=$ppath:/usr/sfw/bin:/usr/bin:/usr/sbin
 	ppath=$ppath:/opt/teamware/bin:/opt/onbld/bin
@@ -1844,7 +1851,7 @@ function extract_ssh_infos
 	ssh_host=`echo $CMD | sed -e 's/ssh:\/\/\([^/]*\)\/.*/\1/'`
 	ssh_dir=`echo $CMD | sed -e 's/ssh:\/\/[^/]*\/\(.*\)/\1/'`
     fi
-    
+
 }
 
 function build_old_new_mercurial
@@ -1905,7 +1912,7 @@ function build_old_new_mercurial
 		fi
 	    fi
 	else
-	    # It's a rename (or a move), so let's make sure we move
+	    # It's a rename (or a move), or a copy, so let's make sure we move
 	    # to the right directory first, then restore it once done
 	    current_dir=`pwd`
 	    cd $CWS/$PDIR
@@ -2096,13 +2103,14 @@ do
 		PARENT_REV=$OPTARG;;
 
 	v)	print "$0 version: $WEBREV_UPDATED";;
-		
+
 
 	?)	usage;;
 	esac
 done
 
 FLIST=/tmp/$$.flist
+HG_LIST_FROM_COMMIT=
 
 if [[ -n $wflag && -n $lflag ]]; then
 	usage
@@ -2338,7 +2346,7 @@ if [[ $SCM_MODE == "teamware" ]]; then
 	#
 	[[ -z $codemgr_ws && -n $CODEMGR_WS ]] && codemgr_ws=$CODEMGR_WS
 	[[ -z $codemgr_ws && -n $WSPACE ]] && codemgr_ws=`$WSPACE name`
-	    
+
 	if [[ -n $codemgr_ws && ! -d $codemgr_ws ]]; then
 		print -u2 "$codemgr_ws: no such workspace"
 		exit 1
@@ -2521,10 +2529,16 @@ print "      Output to: $WDIR"
 #    Bug IDs will be replaced by a URL.  Order of precedence
 #    is: default location, $WEBREV_BUGURL, the -O flag.
 #
-BUGURL='http://monaco.sfbay.sun.com/detail.jsp?cr='
+BUGURL='https://jbs.oracle.com/bugs/browse/'
 [[ -n $WEBREV_BUGURL ]] && BUGURL="$WEBREV_BUGURL"
-[[ -n "$Oflag" ]] && \
+if [[ -n "$Oflag" ]]; then
+    CRID=`echo $CRID | sed -e 's/JDK-//'`
     BUGURL='http://bugs.sun.com/bugdatabase/view_bug.do?bug_id='
+    IDPREFIX=''
+else
+    IDPREFIX='JDK-'
+fi
+
 
 #
 #    Likewise, ARC cases will be replaced by a URL.  Order of precedence
@@ -2539,6 +2553,7 @@ SACURL='http://sac.eng.sun.com'
     SACURL='http://www.opensolaris.org/os/community/arc/caselog'
 
 rm -f $WDIR/$WNAME.patch
+rm -f $WDIR/$WNAME.changeset
 rm -f $WDIR/$WNAME.ps
 rm -f $WDIR/$WNAME.pdf
 
@@ -2561,7 +2576,7 @@ fi
 
 #
 # Should we ignore changes in white spaces when generating diffs?
-# 
+#
 if [[ -n $bflag ]]; then
     DIFFOPTS="-t"
 else
@@ -2748,7 +2763,7 @@ do
 		fi
 	    fi
 	else
-	    
+
 	    #
 	    # If we have old and new versions of the file then run the
 	    # appropriate diffs.  This is complicated by a couple of factors:
@@ -2768,34 +2783,39 @@ do
 	    cleanse_rmfile="sed 's/^\(@@ [0-9+,-]*\) [0-9+,-]* @@$/\1 +0,0 @@/'"
 	    cleanse_newfile="sed 's/^@@ [0-9+,-]* \([0-9+,-]* @@\)$/@@ -0,0 \1/'"
 
-	    rm -f $WDIR/$DIR/$F.patch
-	    if [[ -z $rename ]]; then
-		if [ ! -f $ofile ]; then
-		    diff -u /dev/null $nfile | sh -c "$cleanse_newfile" \
-			> $WDIR/$DIR/$F.patch
-		elif [ ! -f $nfile ]; then
-		    diff -u $ofile /dev/null | sh -c "$cleanse_rmfile" \
-			> $WDIR/$DIR/$F.patch
-		else
-		    diff -u $ofile $nfile > $WDIR/$DIR/$F.patch
-		fi
-	    else
-		diff -u $ofile /dev/null | sh -c "$cleanse_rmfile" \
-		    > $WDIR/$DIR/$F.patch
+            if [[ ! "$HG_LIST_FROM_COMMIT" -eq 1 || ! $flist_mode == "auto" ]];
+            then
+              # Only need to generate a patch file here if there are no commits in outgoing
+              # or if we've specified a file list
+              rm -f $WDIR/$DIR/$F.patch
+              if [[ -z $rename ]]; then
+                  if [ ! -f $ofile ]; then
+                      diff -u /dev/null $nfile | sh -c "$cleanse_newfile" \
+                          > $WDIR/$DIR/$F.patch
+                  elif [ ! -f $nfile ]; then
+                      diff -u $ofile /dev/null | sh -c "$cleanse_rmfile" \
+                          > $WDIR/$DIR/$F.patch
+                  else
+                      diff -u $ofile $nfile > $WDIR/$DIR/$F.patch
+                  fi
+              else
+                  diff -u $ofile /dev/null | sh -c "$cleanse_rmfile" \
+                      > $WDIR/$DIR/$F.patch
 
-		diff -u /dev/null $nfile | sh -c "$cleanse_newfile" \
-		    >> $WDIR/$DIR/$F.patch
+                  diff -u /dev/null $nfile | sh -c "$cleanse_newfile" \
+                      >> $WDIR/$DIR/$F.patch
 
-	    fi
+              fi
 
 
-	#
-	# Tack the patch we just made onto the accumulated patch for the
-	# whole wad.
-	#
-	    cat $WDIR/$DIR/$F.patch >> $WDIR/$WNAME.patch
+            #
+            # Tack the patch we just made onto the accumulated patch for the
+            # whole wad.
+            #
+              cat $WDIR/$DIR/$F.patch >> $WDIR/$WNAME.patch
+            fi
 
-	    print " patch\c"
+            print " patch\c"
 
 	    if [[ -f $ofile && -f $nfile && -z $mv_but_nodiff ]]; then
 
@@ -2887,6 +2907,32 @@ do
 
 	print
 done < $FLIST
+
+# Create the new style mercurial patch here using hg export -r [all-revs] -g -o $CHANGESETPATH
+if [[ $SCM_MODE == "mercurial" ]]; then
+  if [[ "$HG_LIST_FROM_COMMIT" -eq 1 && $flist_mode == "auto" ]]; then
+    EXPORTCHANGESET="$WNAME.changeset"
+    CHANGESETPATH=${WDIR}/${EXPORTCHANGESET}
+    rm -f $CHANGESETPATH
+    touch $CHANGESETPATH
+    if [[ -n $ALL_CREV ]]; then
+      rev_opt=
+      for rev in $ALL_CREV; do
+        rev_opt="$rev_opt --rev $rev"
+      done
+    elif [[ -n $FIRST_CREV ]]; then
+      rev_opt="--rev $FIRST_CREV"
+    fi
+
+    if [[ -n $rev_opt ]]; then
+      (cd $CWS;hg export -g $rev_opt -o $CHANGESETPATH)
+      echo "Created changeset: $CHANGESETPATH" 1>&2
+      # Use it in place of the jdk.patch created above
+      rm -f $WDIR/$WNAME.patch
+    fi
+  set +x
+  fi
+fi
 
 frame_nav_js > $WDIR/ancnav.js
 frame_navigation > $WDIR/ancnav.html
@@ -2983,9 +3029,13 @@ printCI $TOTL $TINS $TDEL $TMOD $TUNC
 print "</td></tr>"
 
 if [[ -f $WDIR/$WNAME.patch ]]; then
-	print "<tr><th>Patch of changes:</th><td>"
-	print "<a href=\"$WNAME.patch\">$WNAME.patch</a></td></tr>"
+  print "<tr><th>Patch of changes:</th><td>"
+  print "<a href=\"$WNAME.patch\">$WNAME.patch</a></td></tr>"
+elif [[ -f $CHANGESETPATH ]]; then
+  print "<tr><th>Changeset:</th><td>"
+  print "<a href=\"$EXPORTCHANGESET\">$EXPORTCHANGESET</a></td></tr>"
 fi
+
 if [[ -f $WDIR/$WNAME.pdf ]]; then
 	print "<tr><th>Printable review:</th><td>"
 	print "<a href=\"$WNAME.pdf\">$WNAME.pdf</a></td></tr>"
@@ -3000,22 +3050,31 @@ fi
 # external URL has a <title> like:
 # <title>Bug ID: 6641309 Wrong Cookie separator used in HttpURLConnection</title>
 # while internal URL has <title> like:
-# <title>6641309: Wrong Cookie separator used in HttpURLConnection</title>
+# <title>[#JDK-6641309] Wrong Cookie separator used in HttpURLConnection</title>
 #
 if [[ -n $CRID ]]; then
     for id in $CRID
     do
+        if [[ -z "$Oflag" ]]; then
+            #add "JDK-" to raw bug id for jbs links.
+            id=`echo ${id} | sed 's/^\([0-9]\{5,\}\)$/JDK-\1/'`
+        fi
         print "<tr><th>Bug id:</th><td>"
         url="${BUGURL}${id}"
-        if [[ -n $WGET ]]; then
-            msg=`$WGET -q $url -O - | grep '<title>' | sed 's/<title>\(.*\)<\/title>/\1/' | sed 's/Bug ID://'`
-        fi
-        if [[ -n $msg ]]; then
-            print "<a href=\"$url\">$msg</a>"
+        if [[ -n "$Oflag" ]]; then
+            cleanup='s/Bug ID: \([0-9]\{5,\}\) \(.*\)/JDK-\1 : \2/'
         else
-            print $id | bug2url
+            cleanup='s|\[#\(JDK-[0-9]\{5,\}\)\] \(.*\)|\1 : \2|'
         fi
-        
+        if [[ -n $WGET ]]; then
+            msg=`$WGET --timeout=10 --tries=1 -q $url -O - | grep '<title>' | sed 's/<title>\(.*\)<\/title>/\1/' | sed "$cleanup" | html_quote`
+        fi
+        if [[ -z $msg ]]; then
+            msg="${id}"
+        fi
+
+        print "<a href=\"$url\">$msg</a>"
+
         print "</td></tr>"
     done
 fi
@@ -3179,4 +3238,3 @@ exec 3<&-			# close FD 3.
 
 print "Done."
 print "Output to: $WDIR"
-

@@ -141,6 +141,7 @@ CORBA_TOPDIR:=@CORBA_TOPDIR@
 JAXP_TOPDIR:=@JAXP_TOPDIR@
 JAXWS_TOPDIR:=@JAXWS_TOPDIR@
 HOTSPOT_TOPDIR:=@HOTSPOT_TOPDIR@
+NASHORN_TOPDIR:=@NASHORN_TOPDIR@
 BDB_TOPDIR:=@BDB_TOPDIR@
 COPYRIGHT_YEAR:=@COPYRIGHT_YEAR@
 
@@ -225,6 +226,7 @@ BUILD_VARIANT_RELEASE:=@BUILD_VARIANT_RELEASE@
 # directory.
 
 BUILD_OUTPUT:=@BUILD_OUTPUT@
+# Colon left out to be able to override IMAGES_OUTPUTDIR for bootcycle-images
 LANGTOOLS_OUTPUTDIR=$(BUILD_OUTPUT)/langtools
 CORBA_OUTPUTDIR=$(BUILD_OUTPUT)/corba
 JAXP_OUTPUTDIR=$(BUILD_OUTPUT)/jaxp
@@ -232,9 +234,11 @@ JAXWS_OUTPUTDIR=$(BUILD_OUTPUT)/jaxws
 HOTSPOT_OUTPUTDIR=$(BUILD_OUTPUT)/hotspot
 BDB_OUTPUTDIR=@BDB_OUTPUTDIR@
 JDK_OUTPUTDIR=$(BUILD_OUTPUT)/jdk
-IMAGES_OUTPUTDIR=$(BUILD_OUTPUT)/legacy-images
+NASHORN_OUTPUTDIR=$(BUILD_OUTPUT)/nashorn
+LEGACYIMAGES_OUTPUTDIR=$(BUILD_OUTPUT)/legacy-images
 POSTMODULES_OUTPUTDIR=$(BUILD_OUTPUT)/post-modules
 MODULEIMAGES_OUTPUTDIR=$(BUILD_OUTPUT)/images
+IMAGES_OUTPUTDIR=$(BUILD_OUTPUT)/images
 JCE_OUTPUTDIR=$(BUILD_OUTPUT)/jce-release
 
 LANGTOOLS_DIST=$(LANGTOOLS_OUTPUTDIR)/dist
@@ -242,6 +246,7 @@ CORBA_DIST=$(CORBA_OUTPUTDIR)/dist
 JAXP_DIST=$(JAXP_OUTPUTDIR)/dist
 JAXWS_DIST=$(JAXWS_OUTPUTDIR)/dist
 HOTSPOT_DIST=@HOTSPOT_DIST@
+NASHORN_DIST=$(NASHORN_OUTPUTDIR)/dist
 BDB_DIST=@BDB_DIST@
 
 BDB_BUILDDIR=@BDB_BUILDDIR@
@@ -269,6 +274,9 @@ ENABLE_SJAVAC:=@ENABLE_SJAVAC@
 # the sjavac server log files.
 SJAVAC_SERVER_DIR:=@SJAVAC_SERVER_DIR@
 
+# Number of parallel jobs to use for compilation
+JOBS?=@JOBS@
+
 # The OpenJDK makefiles should be changed to using the standard
 # configure output ..._CFLAGS and ..._LIBS. In the meantime we
 # extract the information here.
@@ -293,10 +301,20 @@ X_CFLAGS:=@X_CFLAGS@
 X_LIBS:=@X_LIBS@
 OPENWIN_HOME:=@OPENWIN_HOME@
 
+# DirectX SDK
+DXSDK_LIB_PATH=@DXSDK_LIB_PATH@
+DXSDK_INCLUDE_PATH=@DXSDK_INCLUDE_PATH@
+
+# The lowest required version of macosx to enforce compatiblity for
+MACOSX_VERSION_MIN=@MACOSX_VERSION_MIN@
+
 # There are two types: CC or CL
 # CC is gcc and others behaving reasonably similar.
 # CL is cl.exe only.
 COMPILER_TYPE:=@COMPILER_TYPE@
+COMPILER_NAME:=@COMPILER_NAME@
+
+COMPILER_SUPPORTS_TARGET_BITS_FLAG=@COMPILER_SUPPORTS_TARGET_BITS_FLAG@
 
 CC_OUT_OPTION:=@CC_OUT_OPTION@
 EXE_OUT_OPTION:=@EXE_OUT_OPTION@
@@ -374,6 +392,7 @@ AR:=@FIXPATH@ @AR@
 ARFLAGS:=@ARFLAGS@
 
 NM:=@NM@
+GNM:=@GNM@
 STRIP:=@STRIP@
 MCS:=@MCS@
 
@@ -448,6 +467,12 @@ BUILD_JPKG=@FIXPATH@ $(BUILD_JDK)/bin/jpkg
 
 JARSIGNER=@FIXPATH@ $(BOOT_JDK)/bin/jarsigner
 
+# You run the new javac using the boot jdk with $(BOOT_JDK)/bin/java $(NEW_JAVAC) ...
+BOOTSTRAP_JAVAC_JAR:=$(LANGTOOLS_OUTPUTDIR)/dist/bootstrap/lib/javac.jar
+BOOTSTRAP_JAVAC_ARGS:="-Xbootclasspath/p:$(BOOTSTRAP_JAVAC_JAR)" -cp $(BOOTSTRAP_JAVAC_JAR)
+NEW_JAVAC   = $(BOOTSTRAP_JAVAC_ARGS) com.sun.tools.javac.Main
+NEW_JAVADOC = $(BOOTSTRAP_JAVAC_ARGS) com.sun.tools.javadoc.Main
+
 # Base flags for RC
 # Guarding this against resetting value. Legacy make files include spec multiple
 # times.
@@ -517,6 +542,7 @@ FILE:=@FILE@
 HG:=@HG@
 OBJCOPY:=@OBJCOPY@
 SETFILE:=@SETFILE@
+XATTR:=@XATTR@
 
 FIXPATH:=@FIXPATH@
 
@@ -534,6 +560,7 @@ endif
 
 # Build setup
 ENABLE_JFR=@ENABLE_JFR@
+ENABLE_INTREE_EC=@ENABLE_INTREE_EC@
 USE_EXTERNAL_LIBJPEG:=@USE_EXTERNAL_LIBJPEG@
 USE_EXTERNAL_LIBGIF:=@USE_EXTERNAL_LIBGIF@
 USE_EXTERNAL_LIBZ:=@USE_EXTERNAL_LIBZ@
@@ -620,14 +647,6 @@ INSTALL_SHAREDSTATEDIR=@sharedstatedir@
 # Read-only single-machine data
 INSTALL_SYSCONFDIR=@sysconfdir@
 
-#
-# Location for JCE codesigning key.
-#
-SIGNING_KEY_DIR    := /security/ws/JCE-signing/src
-SIGNING_KEYSTORE   := $(SIGNING_KEY_DIR)/KeyStore.jks
-SIGNING_PASSPHRASE := $(SIGNING_KEY_DIR)/passphrase.txt
-SIGNING_ALIAS      := oracle_jce_rsa
-
 ####################################################
 #
 # Misc
@@ -636,25 +655,28 @@ SIGNING_ALIAS      := oracle_jce_rsa
 # Name of Service Agent library
 SALIB_NAME=@SALIB_NAME@
 
+INCLUDE_SA=@INCLUDE_SA@
+
 OS_VERSION_MAJOR:=@OS_VERSION_MAJOR@
 OS_VERSION_MINOR:=@OS_VERSION_MINOR@
 OS_VERSION_MICRO:=@OS_VERSION_MICRO@
 
 # Images directory definitions
-JDK_IMAGE_SUBDIR:=j2sdk-image
-JRE_IMAGE_SUBDIR:=j2re-image
-JDK_OVERLAY_IMAGE_SUBDIR:=j2sdk-overlay-image
-JRE_OVERLAY_IMAGE_SUBDIR:=j2re-overlay-image
-JDK_IMAGE_DIR:=$(IMAGES_OUTPUTDIR)/$(JDK_IMAGE_SUBDIR)
-JRE_IMAGE_DIR:=$(IMAGES_OUTPUTDIR)/$(JRE_IMAGE_SUBDIR)
-JDK_OVERLAY_IMAGE_DIR:=$(IMAGES_OUTPUTDIR)/$(JDK_OVERLAY_IMAGE_SUBDIR)
-JRE_OVERLAY_IMAGE_DIR:=$(IMAGES_OUTPUTDIR)/$(JRE_OVERLAY_IMAGE_SUBDIR)
+JDK_IMAGE_SUBDIR:=jdk-module-image
+JRE_IMAGE_SUBDIR:=jre-module-image
+JDK_OVERLAY_IMAGE_SUBDIR:=jdk-module-overlay-image
+JRE_OVERLAY_IMAGE_SUBDIR:=jre-module-overlay-image
+# Colon left out to be able to override output dir for bootcycle-images
+JDK_IMAGE_DIR=$(IMAGES_OUTPUTDIR)/$(JDK_IMAGE_SUBDIR)
+JRE_IMAGE_DIR=$(IMAGES_OUTPUTDIR)/$(JRE_IMAGE_SUBDIR)
+JDK_OVERLAY_IMAGE_DIR=$(IMAGES_OUTPUTDIR)/$(JDK_OVERLAY_IMAGE_SUBDIR)
+JRE_OVERLAY_IMAGE_DIR=$(IMAGES_OUTPUTDIR)/$(JRE_OVERLAY_IMAGE_SUBDIR)
 
 # Macosx bundles directory definitions
-JDK_BUNDLE_SUBDIR:=j2sdk-bundle/jdk$(JDK_VERSION).jdk/Contents
-JRE_BUNDLE_SUBDIR:=j2re-bundle/jre$(JDK_VERSION).jre/Contents
-JDK_BUNDLE_DIR:=$(IMAGES_OUTPUTDIR)/$(JDK_BUNDLE_SUBDIR)
-JRE_BUNDLE_DIR:=$(IMAGES_OUTPUTDIR)/$(JRE_BUNDLE_SUBDIR)
+JDK_BUNDLE_SUBDIR=j2sdk-bundle/jdk$(JDK_VERSION).jdk/Contents
+JRE_BUNDLE_SUBDIR=j2re-bundle/jre$(JDK_VERSION).jre/Contents
+JDK_BUNDLE_DIR=$(IMAGES_OUTPUTDIR)/$(JDK_BUNDLE_SUBDIR)
+JRE_BUNDLE_DIR=$(IMAGES_OUTPUTDIR)/$(JRE_BUNDLE_SUBDIR)
 
 # Include the custom-spec.gmk file if it exists
 -include $(dir @SPEC@)/custom-spec.gmk
